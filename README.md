@@ -1,21 +1,15 @@
-# J.A.R.V.I.S. AI Assistant (PWA)
+# J.A.R.V.I.S. AI Assistant (GitHub & PWA Ready)
 
 An advanced web-based AI Voice Assistant styled after J.A.R.V.I.S., supporting voice recognition, TTS response, Groq, and Gemini AI.
 
 ## 🚀 Features
-- **PWA Ready**: Can be installed on Android, iOS, Windows, and Mac as a native desktop/mobile application.
-- **Voice Recognition**: Interactive voice commands with multi-language / Hinglish support.
-- **Robotic Male Voice**: Speech Synthesis configured with customizable pitch and rate.
-- **AI Core Integration**: Powered by Groq and Google Gemini API.
-- **Futuristic HUD UI**: Animated Canvas background, dynamic SVGs, glowing eyes, and audio wave animations.
+- **PWA Ready**: Installable on Android, iOS, Windows, and Mac as a native standalone app.
+- **Robot Face Icon**: Custom app icon matching the in-app robotic avatar.
+- **API Key Settings Modal**: Easily input and save your Groq or Gemini API keys securely via browser LocalStorage.
+- **Bilingual Voice Output & Input**: Supports English, Hindi, and fluent Hinglish.
 
-## 💻 Setup Instructions
-1. Clone or download this repository.
-2. Open `index.html` in your browser or serve it using a local server (e.g., Live Server extension in VS Code).
-3. Open `index.html` in a code editor and paste your API Key inside:
-   - `GROQ_API_KEY` or `GEMINI_API_KEY`
-4. Deploy easily via **GitHub Pages**, **Vercel**, or **Netlify**.
-
-## 📱 How to Install as PWA
-- **Desktop (Chrome/Edge)**: Click the Install icon in the browser address bar.
-- **Mobile (Chrome / Safari)**: Tap "Add to Home Screen".
+## 📦 Deployment on GitHub Pages
+1. Create a new repository on GitHub.
+2. Upload all files (`index.html`, `manifest.json`, `sw.js`, `icons/`, `README.md`) to your repository.
+3. Go to **Settings > Pages**.
+4. Set source to **main** branch and click Save. Your JARVIS AI PWA will be live!

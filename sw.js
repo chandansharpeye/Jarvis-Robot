@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jarvis-pwa-v1';
+const CACHE_NAME = 'jarvis-pwa-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -13,6 +13,22 @@ self.addEventListener('install', (event) => {
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
+    })
+  );
+  self.clientsClaim();
 });
 
 self.addEventListener('fetch', (event) => {
