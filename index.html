@@ -102,7 +102,7 @@ body::after{
 #reply{font-size:18px;line-height:1.45;max-width:560px;min-height:54px;margin:6px 0 10px;text-align:center}
 .controls{display:flex;gap:8px;width:100%;max-width:560px}
 #msg{
-  flex:1;min-width:0;padding:13px 14px;border-radius:10px;font:inherit;font-size:16px;
+  flex:1;width:100%;min-width:0;padding:13px 14px;border-radius:10px;font:inherit;font-size:16px;
   background:var(--panel);color:var(--text);border:1px solid var(--line);outline:none;
 }
 #msg:focus{border-color:var(--blue)}
@@ -451,30 +451,21 @@ const SYSTEM_PROMPT =
   "Address the user as 'Boss'. You understand English, Hindi and Hinglish perfectly. "+
   "Reply in the language the user used: English question -> English reply; Hindi or Hinglish -> natural, fluent Hinglish. "+
   "Keep it brief: 1 to 3 short sentences, because it is spoken aloud. No markdown, no emojis, no lists. "+
-  "OUTPUT FORMAT, exactly two lines and nothing else:
-"+
-  "SHOW: <your reply. Hinglish must be written in Roman letters>
-"+
-  "SAY: <the same reply for the voice engine: Hindi words in Devanagari script, English words in Latin letters. "+
-  "If the reply is fully English, SAY is identical to SHOW>
-"+
-  "Example for Hinglish:
-"+
-  "SHOW: Boss, aaj mausam bahut accha hai, bahar chalein?
-"+
-  "SAY: Boss, आज मौसम बहुत अच्छा है, बाहर चलें?";
+  "OUTPUT FORMAT, exactly two lines and nothing else:\n" +
+  "SHOW: <your reply. Hinglish must be written in Roman letters>\n" +
+  "SAY: <the same reply for the voice engine: Hindi words in Devanagari script, English words in Latin letters. " +
+  "If the reply is fully English, SAY is identical to SHOW>.";
 
 function parseReply(raw){
   const clean = raw.trim();
-  const mShow = clean.match(/SHOW:\s*([\s\S]*?)(?:
-\s*SAY:|$)/i);
+  const mShow = clean.match(/SHOW:\s*([\s\S]*?)(?:\n\s*SAY:|$)/i);
   const mSay  = clean.match(/SAY:\s*([\s\S]*)$/i);
   const show = (mShow && mShow[1].trim()) || clean.replace(/^SAY:\s*/i,'').trim();
   const sayT = (mSay && mSay[1].trim()) || show;
   return {show, say: sayT};
 }
 
-async function callGroq(key){
+function callGroq(key){
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
     method:'POST',
     headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
