@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jarvis-pwa-v5';
+const CACHE_NAME = 'jarvis-pwa-v6';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
-      Promise.all(ASSETS_TO_CACHE.map((a) => cache.add(a).catch(() => {})))
+      Promise.all(ASSETS_TO_CACHE.map((a) => cache.add(new Request(a, {cache: 'reload'})).catch(() => {})))
     )
   );
   self.skipWaiting();
@@ -24,35 +24,26 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Network-first: hamesha latest file, internet na ho to cache se (offline).
+// AI API calls (dusre domain) service worker ko touch nahi karte.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  // Sirf apni site ki GET requests handle karo. AI API calls (groq/openai/gemini/anthropic) seedhe network se jayengi.
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // Page: pehle network (hamesha latest), fail ho to cache (offline)
-  if (req.mode === 'navigate') {
-    event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((c) => c.put('./index.html', copy));
-          return res;
-        })
-        .catch(() => caches.match('./index.html'))
-    );
-    return;
-  }
+  const nav = req.mode === 'navigate';
+  const key = nav ? './index.html' : req;
 
-  // Baaki files: pehle cache, na mile to network
   event.respondWith(
-    caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-      if (res && res.ok) {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then((c) => c.put(req, copy));
-      }
-      return res;
-    }))
+    fetch(nav ? req.url : req, {cache: 'no-cache'})
+      .then((res) => {
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(key, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(key).then((hit) => hit || caches.match('./index.html')))
   );
 });
