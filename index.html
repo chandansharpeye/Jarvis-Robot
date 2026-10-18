@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>J.A.R.V.I.S. AI</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#05060f">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>J.A.R.V.I.S. AI</title>
 <style>
 :root{
   --bg:#05060f; --panel:rgba(12,20,60,.75); --line:#2b4a9a;
@@ -119,6 +118,7 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
 .opts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px;max-width:560px}
 .opts button{font-size:13px;padding:8px 12px;font-weight:600}
 .opts button.on{border-color:var(--blue);color:var(--blue)}
+#installBtn{background:linear-gradient(90deg,#00c853,#64dd17);color:#fff;border:none;display:none;}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
@@ -285,16 +285,34 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
   <button id="autoBtn" title="Auto listen again after reply">🔁 Auto Mic: OFF</button>
   <button id="voiceBtn" title="Check voice output">🔊 Test Voice</button>
   <button id="clearBtn" title="Forget conversation">🧹 Reset Chat</button>
+  <button id="installBtn" title="Install App">📲 Install App</button>
+</div>
+
+<!-- API Key Settings Modal (Placed BEFORE scripts) -->
+<div id="settingsModal" style="display:none; position:fixed; inset:0; background:rgba(5,6,15,0.85); backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+  <div style="background:var(--panel); border:1px solid var(--blue); border-radius:14px; padding:20px; max-width:420px; width:100%; color:var(--text); box-shadow:0 0 20px var(--glow);">
+    <h2 style="margin-top:0; font-size:20px; color:var(--blue); text-align:center;">⚙️ API Settings</h2>
+    <p style="font-size:13px; color:var(--dim); line-height:1.4; margin-bottom:16px;">
+      Aap yahan apni Groq ya Gemini API Key save kar sakte hain. Keys aapke browser ke local storage me safe rahengi.
+    </p>
+    <div style="margin-bottom:12px;">
+      <label style="display:block; font-size:12px; margin-bottom:4px; font-weight:bold;">Groq API Key:</label>
+      <input id="groqKeyInput" type="password" placeholder="gsk_..." style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--line); background:#05060f; color:#fff;">
+    </div>
+    <div style="margin-bottom:18px;">
+      <label style="display:block; font-size:12px; margin-bottom:4px; font-weight:bold;">Gemini API Key:</label>
+      <input id="geminiKeyInput" type="password" placeholder="AIzaSy..." style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--line); background:#05060f; color:#fff;">
+    </div>
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button id="closeSettingsBtn" style="background:transparent; border:1px solid var(--dim); color:var(--dim);">Close</button>
+      <button id="saveSettingsBtn" style="background:linear-gradient(90deg,#2a6bff,#8f3dff); border:none; color:#fff;">Save Keys</button>
+    </div>
+  </div>
 </div>
 
 <script>
 /* =====================================================
-   🔑 API KEYS SIRF YAHAN CODE ME DAALO (quotes ke andar)
-   Dono ya koi ek bhi chalegi. PRIMARY pehle try hota hai,
-   fail ho to dusri automatically use hoti hai.
-
-   Groq key  : https://console.groq.com/keys
-   Gemini key: https://aistudio.google.com/apikey
+   🔑 API KEYS SETTINGS
    ===================================================== */
 const GROQ_API_KEY   = "PASTE_YOUR_NEW_GROQ_API_KEY_HERE";
 const GEMINI_API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
@@ -305,7 +323,7 @@ const GEMINI_MODEL = "gemini-2.5-flash";          // ya "gemini-2.5-flash-lite"
 const MAX_TOKENS = 500;
 const HISTORY_LIMIT = 12;                         // last N messages remembered
 
-/* 🤖 ROBOTIC MALE VOICE SETTINGS (pitch kam = bhari robotic awaaz) */
+/* 🤖 ROBOTIC MALE VOICE SETTINGS */
 const VOICE_PITCH = 0.55;   // 0.1 - 2  (kam = bhari/robotic)
 const VOICE_RATE  = 0.93;   // 0.5 - 2  (kam = dheere, mechanical)
 
@@ -381,7 +399,6 @@ function splitChunks(t){
   return out;
 }
 
-/* show = screen text, speakText = text for the voice engine (can be Devanagari mix) */
 function say(show, after, speakText){
   $('reply').textContent = show;
   if (!('speechSynthesis' in window)){
@@ -401,7 +418,7 @@ function say(show, after, speakText){
   setTimeout(() => {
     if (token !== speakToken) return;
     chunks.forEach((c, idx) => {
-      const hindi = /[\u0900-\u097f]/.test(c);
+      const hindi = /[ऀ-ॿ]/.test(c);
       const u = new SpeechSynthesisUtterance(c);
       const v = pickVoice(hindi);
       if (v){ u.voice = v; u.lang = v.lang; } else u.lang = hindi ? 'hi-IN' : 'en-IN';
@@ -434,17 +451,23 @@ const SYSTEM_PROMPT =
   "Address the user as 'Boss'. You understand English, Hindi and Hinglish perfectly. "+
   "Reply in the language the user used: English question -> English reply; Hindi or Hinglish -> natural, fluent Hinglish. "+
   "Keep it brief: 1 to 3 short sentences, because it is spoken aloud. No markdown, no emojis, no lists. "+
-  "OUTPUT FORMAT, exactly two lines and nothing else:\n"+
-  "SHOW: <your reply. Hinglish must be written in Roman letters>\n"+
+  "OUTPUT FORMAT, exactly two lines and nothing else:
+"+
+  "SHOW: <your reply. Hinglish must be written in Roman letters>
+"+
   "SAY: <the same reply for the voice engine: Hindi words in Devanagari script, English words in Latin letters. "+
-  "If the reply is fully English, SAY is identical to SHOW>\n"+
-  "Example for Hinglish:\n"+
-  "SHOW: Boss, aaj mausam bahut accha hai, bahar chalein?\n"+
+  "If the reply is fully English, SAY is identical to SHOW>
+"+
+  "Example for Hinglish:
+"+
+  "SHOW: Boss, aaj mausam bahut accha hai, bahar chalein?
+"+
   "SAY: Boss, आज मौसम बहुत अच्छा है, बाहर चलें?";
 
 function parseReply(raw){
   const clean = raw.trim();
-  const mShow = clean.match(/SHOW:\s*([\s\S]*?)(?:\n\s*SAY:|$)/i);
+  const mShow = clean.match(/SHOW:\s*([\s\S]*?)(?:
+\s*SAY:|$)/i);
   const mSay  = clean.match(/SAY:\s*([\s\S]*)$/i);
   const show = (mShow && mShow[1].trim()) || clean.replace(/^SAY:\s*/i,'').trim();
   const sayT = (mSay && mSay[1].trim()) || show;
@@ -491,7 +514,7 @@ const PROVIDERS = {groq:callGroq, gemini:callGemini};
 
 async function askBrain(prompt){
   if (!hasAnyKey())
-    return {show:"Boss, API key missing hai. Code ke upar GROQ_API_KEY ya GEMINI_API_KEY me key daalo.", say:null};
+    return {show:"Boss, API key missing hai. Neeche 'API Keys' button dabakar key daalo.", say:"Boss, API key missing hai. Key set karo."};
 
   thinking = true; refreshState();
   chatHistory.push({role:'user', content:prompt});
@@ -533,11 +556,11 @@ const SITES = {
 async function respond(text){
   const q = text.toLowerCase();
 
-  if (/\b(time|samay|baje|kitne baj)/.test(q)){
+  if (/(time|samay|baje|kitne baj)/.test(q)){
     const t = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
     return say('Boss, abhi time hai ' + t, afterTurn);
   }
-  if (/\b(date|tarikh|aaj kya din)\b/.test(q)){
+  if (/(date|tarikh|aaj kya din)/.test(q)){
     const d = new Date().toLocaleDateString('en-IN', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
     return say('Boss, aaj ki date hai ' + d, afterTurn);
   }
@@ -550,7 +573,7 @@ async function respond(text){
       }
     }
   }
-  if (/^(search|google|dhundo|search karo)\b/.test(q)){
+  if (/^(search|google|dhundo|search karo)/.test(q)){
     const term = text.replace(/^(search karo|search|google|dhundo)\s*/i,'');
     if (term){
       say('Searching ' + term + ', Boss.', afterTurn);
@@ -686,44 +709,51 @@ $('voiceBtn').onclick = () => {
 })();
 
 /* ---------------- UI wiring ---------------- */
-$('send').onclick = send;
-$('msg').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
-$('mic').onclick = listen;
-$('stop').onclick = stopAll;
-$('langBtn').onclick = () => {
-  micLang = micLang === 'hi-IN' ? 'en-IN' : 'hi-IN';
-  $('langBtn').textContent = '🌐 Mic: ' + (micLang === 'hi-IN' ? 'Hinglish' : 'English');
-};
-$('autoBtn').onclick = () => {
-  autoMic = !autoMic;
-  $('autoBtn').textContent = '🔁 Auto Mic: ' + (autoMic ? 'ON' : 'OFF');
-  $('autoBtn').classList.toggle('on', autoMic);
-  if (autoMic) listen();
-};
+window.addEventListener('DOMContentLoaded', () => {
+  if ($('send')) $('send').onclick = send;
+  if ($('msg')) $('msg').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+  if ($('mic')) $('mic').onclick = listen;
+  if ($('stop')) $('stop').onclick = stopAll;
+  if ($('langBtn')) $('langBtn').onclick = () => {
+    micLang = micLang === 'hi-IN' ? 'en-IN' : 'hi-IN';
+    $('langBtn').textContent = '🌐 Mic: ' + (micLang === 'hi-IN' ? 'Hinglish' : 'English');
+  };
+  if ($('autoBtn')) $('autoBtn').onclick = () => {
+    autoMic = !autoMic;
+    $('autoBtn').textContent = '🔁 Auto Mic: ' + (autoMic ? 'ON' : 'OFF');
+    $('autoBtn').classList.toggle('on', autoMic);
+    if (autoMic) listen();
+  };
 
-/* ---------------- Settings Modal wiring ---------------- */
-const settingsModal = $('settingsModal');
-$('settingsBtn').onclick = () => {
-  $('groqKeyInput').value = localStorage.getItem('jarvis_groq_key') || (GROQ_API_KEY.includes('PASTE_YOUR') ? '' : GROQ_API_KEY);
-  $('geminiKeyInput').value = localStorage.getItem('jarvis_gemini_key') || (GEMINI_API_KEY.includes('PASTE_YOUR') ? '' : GEMINI_API_KEY);
-  settingsModal.style.display = 'flex';
-};
-$('closeSettingsBtn').onclick = () => { settingsModal.style.display = 'none'; };
-$('saveSettingsBtn').onclick = () => {
-  const gKey = $('groqKeyInput').value.trim();
-  const gemKey = $('geminiKeyInput').value.trim();
-  if (gKey) localStorage.setItem('jarvis_groq_key', gKey); else localStorage.removeItem('jarvis_groq_key');
-  if (gemKey) localStorage.setItem('jarvis_gemini_key', gemKey); else localStorage.removeItem('jarvis_gemini_key');
-  settingsModal.style.display = 'none';
-  if (hasAnyKey()) $('reply').textContent = 'API Key save ho gayi, Boss. Systems fully online!';
-  else $('reply').textContent = 'Boss, pehle API Key set karo.';
-};
+  /* Settings Modal Wiring */
+  const settingsModal = $('settingsModal');
+  if ($('settingsBtn')) {
+    $('settingsBtn').onclick = () => {
+      $('groqKeyInput').value = localStorage.getItem('jarvis_groq_key') || (GROQ_API_KEY.includes('PASTE_YOUR') ? '' : GROQ_API_KEY);
+      $('geminiKeyInput').value = localStorage.getItem('jarvis_gemini_key') || (GEMINI_API_KEY.includes('PASTE_YOUR') ? '' : GEMINI_API_KEY);
+      if (settingsModal) settingsModal.style.display = 'flex';
+    };
+  }
+  if ($('closeSettingsBtn')) $('closeSettingsBtn').onclick = () => { if (settingsModal) settingsModal.style.display = 'none'; };
+  if ($('saveSettingsBtn')) {
+    $('saveSettingsBtn').onclick = () => {
+      const gKey = $('groqKeyInput').value.trim();
+      const gemKey = $('geminiKeyInput').value.trim();
+      if (gKey) localStorage.setItem('jarvis_groq_key', gKey); else localStorage.removeItem('jarvis_groq_key');
+      if (gemKey) localStorage.setItem('jarvis_gemini_key', gemKey); else localStorage.removeItem('jarvis_gemini_key');
+      if (settingsModal) settingsModal.style.display = 'none';
+      if (hasAnyKey()) $('reply').textContent = 'API Key save ho gayi, Boss. Systems fully online!';
+      else $('reply').textContent = 'Boss, pehle API Key set karo.';
+    };
+  }
 
-$('clearBtn').onclick = () => { chatHistory = []; $('heard').textContent = ''; say('Memory reset ho gayi, Boss.'); };
+  if ($('clearBtn')) $('clearBtn').onclick = () => { chatHistory = []; $('heard').textContent = ''; say('Memory reset ho gayi, Boss.'); };
 
-if (!hasAnyKey()) $('reply').textContent = 'Boss, pehle code ke upar GROQ_API_KEY ya GEMINI_API_KEY me key daalo.';
-</script>
-<script>
+  if (!hasAnyKey()) $('reply').textContent = 'Boss, pehle neeche 🔑 API Keys button dabakar key daalo.';
+});
+
+/* ---------------- PWA Service Worker & Install Prompt ---------------- */
+let deferredPrompt = null;
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
@@ -731,29 +761,28 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.error('Service Worker Registration Failed!', err));
   });
 }
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const installBtn = $('installBtn');
+  if (installBtn) installBtn.style.display = 'inline-block';
+});
+
+if ($('installBtn')) {
+  $('installBtn').addEventListener('click', () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted PWA install');
+        }
+        deferredPrompt = null;
+        $('installBtn').style.display = 'none';
+      });
+    }
+  });
+}
 </script>
-
-<!-- API Key Settings Modal -->
-<div id="settingsModal" style="display:none; position:fixed; inset:0; background:rgba(5,6,15,0.85); backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center; padding:16px;">
-  <div style="background:var(--panel); border:1px solid var(--blue); border-radius:14px; padding:20px; max-width:420px; width:100%; color:var(--text); box-shadow:0 0 20px var(--glow);">
-    <h2 style="margin-top:0; font-size:20px; color:var(--blue); text-align:center;">⚙️ API Settings</h2>
-    <p style="font-size:13px; color:var(--dim); line-height:1.4; margin-bottom:16px;">
-      Aap yahan apni Groq ya Gemini API Key save kar sakte hain. Keys aapke browser ke local storage me safe rahengi.
-    </p>
-    <div style="margin-bottom:12px;">
-      <label style="display:block; font-size:12px; margin-bottom:4px; font-weight:bold;">Groq API Key:</label>
-      <input id="groqKeyInput" type="password" placeholder="gsk_..." style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--line); background:#05060f; color:#fff;">
-    </div>
-    <div style="margin-bottom:18px;">
-      <label style="display:block; font-size:12px; margin-bottom:4px; font-weight:bold;">Gemini API Key:</label>
-      <input id="geminiKeyInput" type="password" placeholder="AIzaSy..." style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--line); background:#05060f; color:#fff;">
-    </div>
-    <div style="display:flex; gap:10px; justify-content:flex-end;">
-      <button id="closeSettingsBtn" style="background:transparent; border:1px solid var(--dim); color:var(--dim);">Close</button>
-      <button id="saveSettingsBtn" style="background:linear-gradient(90deg,#2a6bff,#8f3dff); border:none; color:#fff;">Save Keys</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
