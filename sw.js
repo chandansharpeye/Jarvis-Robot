@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jarvis-pwa-v3';
+const CACHE_NAME = 'jarvis-pwa-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -13,7 +13,9 @@ const ASSETS_TO_CACHE = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(ASSETS_TO_CACHE.map((a) => cache.add(a).catch(() => {})))
+    )
   );
   self.skipWaiting();
 });

@@ -124,10 +124,9 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
 .opts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px;max-width:560px}
 .opts button{font-size:13px;padding:8px 12px;font-weight:600}
 .opts button.on{border-color:var(--blue);color:var(--blue)}
-#installBtn{background:linear-gradient(90deg,#00c853,#64dd17);color:#fff;border:none;display:none;}
+#installBtn{background:linear-gradient(90deg,#00c853,#64dd17);color:#fff;border:none}
 #stop{background:linear-gradient(90deg,#444c6e,#2b3150);border-color:transparent;color:#fff}
 .controls{flex-wrap:wrap}
-#installBtn{display:none}
 /* settings modal */
 #settingsModal{display:none;position:fixed;inset:0;background:rgba(5,6,15,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;align-items:center;justify-content:center;padding:12px}
 .sheet{background:#0c143c;border:1px solid var(--blue);border-radius:14px;padding:18px;max-width:460px;width:100%;max-height:92vh;overflow-y:auto;color:var(--text);box-shadow:0 0 24px var(--glow)}
@@ -911,15 +910,12 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 
 window.addEventListener('DOMContentLoaded', () => {
   const btn = $('installBtn');
-  if (!btn || isStandalone()) return;
-  if (isIOS) btn.style.display = 'inline-block';      // iOS: manual steps dikhayenge
+  if (btn && isStandalone()) btn.style.display = 'none';
 });
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  const btn = $('installBtn');
-  if (btn && !isStandalone()) btn.style.display = 'inline-block';
 });
 
 window.addEventListener('appinstalled', () => {
@@ -928,6 +924,34 @@ window.addEventListener('appinstalled', () => {
   toast('JARVIS install ho gaya ✓');
 });
 
+async function diagnoseInstall(){
+  const L = [];
+  const secure = window.isSecureContext && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+  L.push((secure ? '✅' : '❌') + ' https/secure: ' + location.protocol + '//' + location.hostname + (secure ? '' : '  (https zaroori hai, file:// ya http se install nahi hoga)'));
+  const ua = navigator.userAgent;
+  const inApp = /; wv\)|FBAN|FBAV|Instagram|Line\/|WhatsApp|Telegram|Acode/i.test(ua);
+  L.push((inApp ? '❌' : '✅') + ' Browser: ' + (inApp ? 'in-app browser lag raha hai, Chrome me kholo' : 'OK'));
+  L.push(('serviceWorker' in navigator ? '✅' : '❌') + ' Service Worker support');
+  try{
+    const reg = await navigator.serviceWorker.getRegistration();
+    L.push((reg && (reg.active || reg.installing || reg.waiting) ? '✅' : '❌') + ' Service Worker registered' + (reg ? '' : ' (sw.js upload hui?)'));
+  }catch(e){ L.push('❌ Service Worker: ' + e.message); }
+  try{
+    const r = await fetch('manifest.json', {cache:'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const m = await r.json();
+    L.push('✅ manifest.json mila');
+    for (const ic of (m.icons || [])){
+      try{
+        const ir = await fetch(new URL(ic.src, new URL('manifest.json', location.href)), {cache:'no-store'});
+        L.push((ir.ok ? '✅ ' : '❌ ') + ic.src + (ir.ok ? '' : ' nahi mila (icons folder upload karo)'));
+      }catch(e){ L.push('❌ ' + ic.src + ' error'); }
+    }
+  }catch(e){ L.push('❌ manifest.json: ' + e.message); }
+  L.push((isStandalone() ? '✅ Already installed app mode me chal raha hai' : 'ℹ️ Abhi browser tab me hai'));
+  return L.join('\n');
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   const btn = $('installBtn'); if (!btn) return;
   btn.addEventListener('click', async () => {
@@ -935,12 +959,14 @@ window.addEventListener('DOMContentLoaded', () => {
       deferredPrompt.prompt();
       try{ await deferredPrompt.userChoice; }catch(e){}
       deferredPrompt = null;
-      btn.style.display = 'none';
-    } else if (isIOS){
-      alert('iPhone/iPad par install: Safari me Share button dabao, phir "Add to Home Screen" chuno.');
-    } else {
-      alert('Browser menu (⋮) kholo aur "Install app" / "Add to Home screen" chuno.');
+      return;
     }
+    if (isIOS){
+      alert('iPhone/iPad par install: Safari me Share button dabao, phir "Add to Home Screen" chuno.');
+      return;
+    }
+    const rep = await diagnoseInstall();
+    alert('Install prompt abhi nahi aaya. Check result:\n\n' + rep + '\n\nSab ✅ ho to Chrome menu (⋮) > "Install app" ya "Add to Home screen" dabao.');
   });
 });
 </script>
