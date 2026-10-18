@@ -4,9 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>J.A.R.V.I.S. AI</title>
+  <meta name="description" content="J.A.R.V.I.S. - voice AI assistant (Gemini, Groq, OpenAI, Claude)">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#05060f">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JARVIS">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>
 :root{
   --bg:#05060f; --panel:rgba(12,20,60,.75); --line:#2b4a9a;
@@ -119,6 +125,30 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
 .opts button{font-size:13px;padding:8px 12px;font-weight:600}
 .opts button.on{border-color:var(--blue);color:var(--blue)}
 #installBtn{background:linear-gradient(90deg,#00c853,#64dd17);color:#fff;border:none;display:none;}
+#stop{background:linear-gradient(90deg,#444c6e,#2b3150);border-color:transparent;color:#fff}
+.controls{flex-wrap:wrap}
+#installBtn{display:none}
+/* settings modal */
+#settingsModal{display:none;position:fixed;inset:0;background:rgba(5,6,15,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;align-items:center;justify-content:center;padding:12px}
+.sheet{background:#0c143c;border:1px solid var(--blue);border-radius:14px;padding:18px;max-width:460px;width:100%;max-height:92vh;overflow-y:auto;color:var(--text);box-shadow:0 0 24px var(--glow)}
+.sheet h2{margin:0 0 6px;font-size:20px;color:var(--blue);text-align:center}
+.sheet .hint{font-size:12.5px;color:var(--dim);line-height:1.45;margin:0 0 14px;text-align:center}
+.kbox{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:rgba(5,6,15,.55)}
+.kbox.active{border-color:var(--blue);box-shadow:0 0 10px rgba(47,168,255,.35)}
+.khead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.khead b{font-size:15px}
+.badge{font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--dim);color:var(--dim)}
+.badge.ok{border-color:#4dffb4;color:#4dffb4}
+.krow{display:flex;gap:6px;margin-bottom:6px}
+.kbox input,.sheet select{width:100%;min-width:0;padding:10px;border-radius:8px;border:1px solid var(--line);background:#05060f;color:#fff;font:inherit;font-size:14px}
+.kbox input:focus,.sheet select:focus{border-color:var(--blue);outline:none}
+.kbox label{display:block;font-size:11px;color:var(--dim);margin:6px 0 3px}
+.mini{padding:8px 10px;font-size:13px}
+.klink{font-size:11px;color:var(--blue);text-decoration:none}
+.ktest{font-size:12px;min-height:16px;margin-top:6px;color:var(--dim)}
+.ktest.good{color:#4dffb4}.ktest.bad{color:#ff6b7a}
+.sheetBtns{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
+#toast{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);background:#0c143c;border:1px solid var(--blue);color:var(--text);padding:10px 16px;border-radius:10px;font-size:13px;z-index:10000;display:none;max-width:90%;text-align:center}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
@@ -288,40 +318,76 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
   <button id="installBtn" title="Install App">📲 Install App</button>
 </div>
 
-<!-- API Key Settings Modal (Placed BEFORE scripts) -->
-<div id="settingsModal" style="display:none; position:fixed; inset:0; background:rgba(5,6,15,0.85); backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center; padding:16px;">
-  <div style="background:var(--panel); border:1px solid var(--blue); border-radius:14px; padding:20px; max-width:420px; width:100%; color:var(--text); box-shadow:0 0 20px var(--glow);">
-    <h2 style="margin-top:0; font-size:20px; color:var(--blue); text-align:center;">⚙️ API Settings</h2>
-    <p style="font-size:13px; color:var(--dim); line-height:1.4; margin-bottom:16px;">
-      Aap yahan apni Groq ya Gemini API Key save kar sakte hain. Keys aapke browser ke local storage me safe rahengi.
-    </p>
-    <div style="margin-bottom:12px;">
-      <label style="display:block; font-size:12px; margin-bottom:4px; font-weight:bold;">Groq API Key:</label>
-      <input id="groqKeyInput" type="password" placeholder="gsk_..." style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--line); background:#05060f; color:#fff;">
+<!-- API Key Settings Modal -->
+<div id="settingsModal" role="dialog" aria-modal="true" aria-label="API Settings">
+  <div class="sheet">
+    <h2>⚙️ API Settings</h2>
+    <p class="hint">Apni keys yahan daalo. Keys sirf aapke phone/browser ke local storage me rehti hain, kahin upload nahi hoti. Jis provider ki key daali hogi wahi use hoga.</p>
+
+    <div class="kbox" style="margin-bottom:14px">
+      <label style="margin-top:0">⭐ Primary AI (pehle ye try hoga, fail ho to baaki)</label>
+      <select id="primarySel">
+        <option value="groq">Groq</option>
+        <option value="gemini">Gemini</option>
+        <option value="openai">OpenAI</option>
+        <option value="claude">Claude</option>
+      </select>
     </div>
-    <div style="margin-bottom:18px;">
-      <label style="display:block; font-size:12px; margin-bottom:4px; font-weight:bold;">Gemini API Key:</label>
-      <input id="geminiKeyInput" type="password" placeholder="AIzaSy..." style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--line); background:#05060f; color:#fff;">
+
+    <div class="kbox" data-p="groq">
+      <div class="khead"><b>⚡ Groq</b><span class="badge" id="badge_groq">no key</span></div>
+      <div class="krow"><input id="key_groq" type="password" placeholder="gsk_..." autocomplete="off" autocapitalize="off" spellcheck="false"><button class="mini" data-show="groq" type="button">👁</button></div>
+      <label>Model</label><input id="model_groq" placeholder="llama-3.3-70b-versatile" autocapitalize="off" spellcheck="false">
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center;justify-content:space-between"><a class="klink" href="https://console.groq.com/keys" target="_blank" rel="noopener">Key kahan se milegi</a><button class="mini" data-test="groq" type="button">Test</button></div>
+      <div class="ktest" id="test_groq"></div>
     </div>
-    <div style="display:flex; gap:10px; justify-content:flex-end;">
-      <button id="closeSettingsBtn" style="background:transparent; border:1px solid var(--dim); color:var(--dim);">Close</button>
-      <button id="saveSettingsBtn" style="background:linear-gradient(90deg,#2a6bff,#8f3dff); border:none; color:#fff;">Save Keys</button>
+
+    <div class="kbox" data-p="gemini">
+      <div class="khead"><b>✨ Gemini</b><span class="badge" id="badge_gemini">no key</span></div>
+      <div class="krow"><input id="key_gemini" type="password" placeholder="AIzaSy..." autocomplete="off" autocapitalize="off" spellcheck="false"><button class="mini" data-show="gemini" type="button">👁</button></div>
+      <label>Model</label><input id="model_gemini" placeholder="gemini-2.5-flash" autocapitalize="off" spellcheck="false">
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center;justify-content:space-between"><a class="klink" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Key kahan se milegi</a><button class="mini" data-test="gemini" type="button">Test</button></div>
+      <div class="ktest" id="test_gemini"></div>
+    </div>
+
+    <div class="kbox" data-p="openai">
+      <div class="khead"><b>🧠 OpenAI</b><span class="badge" id="badge_openai">no key</span></div>
+      <div class="krow"><input id="key_openai" type="password" placeholder="sk-..." autocomplete="off" autocapitalize="off" spellcheck="false"><button class="mini" data-show="openai" type="button">👁</button></div>
+      <label>Model</label><input id="model_openai" placeholder="gpt-4o-mini" autocapitalize="off" spellcheck="false">
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center;justify-content:space-between"><a class="klink" href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">Key kahan se milegi</a><button class="mini" data-test="openai" type="button">Test</button></div>
+      <div class="ktest" id="test_openai"></div>
+    </div>
+
+    <div class="kbox" data-p="claude">
+      <div class="khead"><b>🤖 Claude</b><span class="badge" id="badge_claude">no key</span></div>
+      <div class="krow"><input id="key_claude" type="password" placeholder="sk-ant-..." autocomplete="off" autocapitalize="off" spellcheck="false"><button class="mini" data-show="claude" type="button">👁</button></div>
+      <label>Model</label><input id="model_claude" placeholder="claude-haiku-5-5" autocapitalize="off" spellcheck="false">
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center;justify-content:space-between"><a class="klink" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Key kahan se milegi</a><button class="mini" data-test="claude" type="button">Test</button></div>
+      <div class="ktest" id="test_claude"></div>
+    </div>
+
+    <div class="sheetBtns">
+      <button id="closeSettingsBtn" type="button" style="background:transparent;border:1px solid var(--dim);color:var(--dim)">Close</button>
+      <button id="saveSettingsBtn" type="button" style="background:linear-gradient(90deg,#2a6bff,#8f3dff);border:none;color:#fff">Save Keys</button>
     </div>
   </div>
 </div>
+<div id="toast"></div>
 
 <script>
 /* =====================================================
-   🔑 API KEYS SETTINGS
+   🔑 SETTINGS (keys settings box se aati hain, code me mat likho)
    ===================================================== */
-const GROQ_API_KEY   = "PASTE_YOUR_NEW_GROQ_API_KEY_HERE";
-const GEMINI_API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE";
-
-const PRIMARY = "groq";                           // "groq" ya "gemini"
-const GROQ_MODEL   = "llama-3.3-70b-versatile";   // fast: "llama-3.1-8b-instant"
-const GEMINI_MODEL = "gemini-2.5-flash";          // ya "gemini-2.5-flash-lite"
+const PROVIDER_LIST = ['groq','gemini','openai','claude'];
+const PROVIDER_NAME = {groq:'Groq', gemini:'Gemini', openai:'OpenAI', claude:'Claude'};
+const DEFAULT_MODEL = {
+  groq:   'llama-3.3-70b-versatile',   // fast: llama-3.1-8b-instant
+  gemini: 'gemini-2.5-flash',          // ya gemini-2.5-flash-lite
+  openai: 'gpt-4o-mini',
+  claude: 'claude-haiku-5-5'
+};
 const MAX_TOKENS = 500;
-const HISTORY_LIMIT = 12;                         // last N messages remembered
+const HISTORY_LIMIT = 12;            // last N messages remembered
 
 /* 🤖 ROBOTIC MALE VOICE SETTINGS */
 const VOICE_PITCH = 0.55;   // 0.1 - 2  (kam = bhari/robotic)
@@ -343,14 +409,17 @@ let autoMic = false;
 let micLang = 'hi-IN';           // Hinglish / Hindi
 let speakToken = 0;
 
-const CODE_KEYS = {groq: GROQ_API_KEY, gemini: GEMINI_API_KEY};
-function getKey(p){
-  const localKey = localStorage.getItem('jarvis_' + p + '_key') || '';
-  if (localKey.trim()) return localKey.trim();
-  const k = (CODE_KEYS[p] || '').trim();
-  return (k && !k.includes('PASTE_YOUR')) ? k : '';
+function lsGet(k){ try{ return localStorage.getItem(k) || ''; }catch(e){ return ''; } }
+function lsSet(k,v){ try{ if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); }catch(e){} }
+function getKey(p){ return lsGet('jarvis_' + p + '_key').trim(); }
+function getModel(p){ return lsGet('jarvis_' + p + '_model').trim() || DEFAULT_MODEL[p]; }
+function getPrimary(){ const v = lsGet('jarvis_primary'); return PROVIDER_LIST.includes(v) ? v : 'groq'; }
+function hasAnyKey(){ return PROVIDER_LIST.some(p => !!getKey(p)); }
+function toast(t){
+  const el = $('toast'); if (!el) return;
+  el.textContent = t; el.style.display = 'block';
+  clearTimeout(toast._t); toast._t = setTimeout(() => el.style.display = 'none', 2600);
 }
-function hasAnyKey(){ return !!(getKey('groq') || getKey('gemini')); }
 
 function setState(s){
   app.className = s || '';
@@ -465,43 +534,83 @@ function parseReply(raw){
   return {show, say: sayT};
 }
 
-function callGroq(key){
+async function readJson(res){
+  try{ return await res.json(); }catch(e){ return {}; }
+}
+
+async function callGroq(key, msgs, system){
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
     method:'POST',
     headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
     body: JSON.stringify({
-      model: GROQ_MODEL, max_tokens: MAX_TOKENS, temperature: 0.7,
-      messages:[{role:'system', content:SYSTEM_PROMPT}, ...chatHistory]
+      model: getModel('groq'), max_tokens: MAX_TOKENS, temperature: 0.7,
+      messages:[{role:'system', content:system}, ...msgs]
     })
   });
-  const data = await res.json();
-  const text = data.choices && data.choices[0] && data.choices[0].message.content;
+  const data = await readJson(res);
+  const text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
   if (text) return {ok:true, text:text.trim()};
   return {ok:false, status:res.status, err:(data.error && data.error.message) || 'empty response'};
 }
 
-async function callGemini(key, noThinkingCfg){
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/'+GEMINI_MODEL+':generateContent';
+async function callOpenAI(key, msgs, system){
+  const res = await fetch('https://api.openai.com/v1/chat/completions',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model: getModel('openai'), max_completion_tokens: MAX_TOKENS,
+      messages:[{role:'system', content:system}, ...msgs]
+    })
+  });
+  const data = await readJson(res);
+  const text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if (text) return {ok:true, text:text.trim()};
+  return {ok:false, status:res.status, err:(data.error && data.error.message) || 'empty response'};
+}
+
+async function callClaude(key, msgs, system){
+  const res = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'Content-Type':'application/json'
+    },
+    body: JSON.stringify({
+      model: getModel('claude'), max_tokens: MAX_TOKENS, temperature: 0.7,
+      system: system,
+      messages: msgs
+    })
+  });
+  const data = await readJson(res);
+  const text = data.content && data.content.map(c => c.text || '').join('').trim();
+  if (text) return {ok:true, text};
+  return {ok:false, status:res.status, err:(data.error && data.error.message) || 'empty response'};
+}
+
+async function callGemini(key, msgs, system, noThinkingCfg){
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(getModel('gemini'))+':generateContent';
   const gen = {maxOutputTokens: MAX_TOKENS + 300, temperature: 0.7};
   if (!noThinkingCfg) gen.thinkingConfig = {thinkingBudget: 0};
   const res = await fetch(url,{
     method:'POST',
     headers:{'x-goog-api-key':key,'Content-Type':'application/json'},
     body: JSON.stringify({
-      systemInstruction:{parts:[{text:SYSTEM_PROMPT}]},
-      contents: chatHistory.map(m => ({role: m.role==='assistant' ? 'model' : 'user', parts:[{text:m.content}]})),
+      systemInstruction:{parts:[{text:system}]},
+      contents: msgs.map(m => ({role: m.role==='assistant' ? 'model' : 'user', parts:[{text:m.content}]})),
       generationConfig: gen
     })
   });
-  const data = await res.json();
+  const data = await readJson(res);
   const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
   const text = parts && parts.map(p => p.text || '').join('').trim();
   if (text) return {ok:true, text};
-  if (!noThinkingCfg && res.status === 400) return callGemini(key, true);
+  if (!noThinkingCfg && res.status === 400) return callGemini(key, msgs, system, true);
   return {ok:false, status:res.status, err:(data.error && data.error.message) || 'empty response'};
 }
 
-const PROVIDERS = {groq:callGroq, gemini:callGemini};
+const PROVIDERS = {groq:callGroq, gemini:callGemini, openai:callOpenAI, claude:callClaude};
 
 async function askBrain(prompt){
   if (!hasAnyKey())
@@ -510,23 +619,25 @@ async function askBrain(prompt){
   thinking = true; refreshState();
   chatHistory.push({role:'user', content:prompt});
   if (chatHistory.length > HISTORY_LIMIT) chatHistory = chatHistory.slice(-HISTORY_LIMIT);
+  while (chatHistory.length && chatHistory[0].role !== 'user') chatHistory.shift();   // Claude/Gemini need user-first
 
-  const order = [PRIMARY, PRIMARY === 'groq' ? 'gemini' : 'groq'];
+  const primary = getPrimary();
+  const order = [primary, ...PROVIDER_LIST.filter(p => p !== primary)];
   let lastErr = '';
   try{
     for (const name of order){
       const key = getKey(name);
       if (!key) continue;
       try{
-        const r = await PROVIDERS[name](key);
+        const r = await PROVIDERS[name](key, chatHistory, SYSTEM_PROMPT);
         if (r.ok){
           chatHistory.push({role:'assistant', content:r.text});
           return parseReply(r.text);
         }
-        lastErr = name + ' ' + r.status + ': ' + r.err;
+        lastErr = PROVIDER_NAME[name] + ' ' + r.status + ': ' + r.err;
         console.warn('Provider failed', lastErr);
       }catch(e){
-        lastErr = name + ': network/CORS error - ' + e.message;
+        lastErr = PROVIDER_NAME[name] + ': network/CORS error - ' + e.message;
         console.warn('Provider error', name, e);
       }
     }
@@ -535,6 +646,24 @@ async function askBrain(prompt){
   }finally{
     thinking = false; refreshState();
   }
+}
+
+async function testProvider(name){
+  const out = $('test_' + name);
+  const key = ($('key_' + name).value || '').trim();
+  if (!key){ out.className = 'ktest bad'; out.textContent = 'Pehle key daalo.'; return; }
+  const model = ($('model_' + name).value || '').trim();
+  const prev = lsGet('jarvis_' + name + '_model');
+  lsSet('jarvis_' + name + '_model', model);     // test selected model
+  out.className = 'ktest'; out.textContent = 'Testing...';
+  try{
+    const r = await PROVIDERS[name](key, [{role:'user', content:'Say OK'}], 'Reply with the single word OK.');
+    out.className = 'ktest ' + (r.ok ? 'good' : 'bad');
+    out.textContent = r.ok ? '✅ Key sahi hai, kaam kar rahi hai.' : '❌ ' + r.status + ': ' + r.err;
+  }catch(e){
+    out.className = 'ktest bad'; out.textContent = '❌ Network error: ' + e.message;
+  }
+  lsSet('jarvis_' + name + '_model', prev);
 }
 
 /* ---------------- commands ---------------- */
@@ -547,11 +676,11 @@ const SITES = {
 async function respond(text){
   const q = text.toLowerCase();
 
-  if (/(time|samay|baje|kitne baj)/.test(q)){
+  if (/(what('?s)? the time|current time|time kya|abhi.*time|kitne baj|samay kya|\btime batao|\btell me the time)/.test(q)){
     const t = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
     return say('Boss, abhi time hai ' + t, afterTurn);
   }
-  if (/(date|tarikh|aaj kya din)/.test(q)){
+  if (/(today'?s date|what('?s)? the date|aaj ki (date|tarikh)|aaj kya (din|date)|\bdate batao|tarikh kya)/.test(q)){
     const d = new Date().toLocaleDateString('en-IN', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
     return say('Boss, aaj ki date hai ' + d, afterTurn);
   }
@@ -564,7 +693,7 @@ async function respond(text){
       }
     }
   }
-  if (/^(search|google|dhundo|search karo)/.test(q)){
+  if (/^(search|google|dhundo|search karo)\b/.test(q)){
     const term = text.replace(/^(search karo|search|google|dhundo)\s*/i,'');
     if (term){
       say('Searching ' + term + ', Boss.', afterTurn);
@@ -718,25 +847,49 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* Settings Modal Wiring */
   const settingsModal = $('settingsModal');
-  if ($('settingsBtn')) {
-    $('settingsBtn').onclick = () => {
-      $('groqKeyInput').value = localStorage.getItem('jarvis_groq_key') || (GROQ_API_KEY.includes('PASTE_YOUR') ? '' : GROQ_API_KEY);
-      $('geminiKeyInput').value = localStorage.getItem('jarvis_gemini_key') || (GEMINI_API_KEY.includes('PASTE_YOUR') ? '' : GEMINI_API_KEY);
-      if (settingsModal) settingsModal.style.display = 'flex';
-    };
+  function refreshBadges(){
+    PROVIDER_LIST.forEach(p => {
+      const has = !!($('key_' + p).value || '').trim();
+      const b = $('badge_' + p);
+      b.textContent = has ? 'key set ✓' : 'no key';
+      b.classList.toggle('ok', has);
+    });
+    const prim = $('primarySel').value;
+    document.querySelectorAll('.kbox[data-p]').forEach(el => el.classList.toggle('active', el.dataset.p === prim));
   }
-  if ($('closeSettingsBtn')) $('closeSettingsBtn').onclick = () => { if (settingsModal) settingsModal.style.display = 'none'; };
-  if ($('saveSettingsBtn')) {
-    $('saveSettingsBtn').onclick = () => {
-      const gKey = $('groqKeyInput').value.trim();
-      const gemKey = $('geminiKeyInput').value.trim();
-      if (gKey) localStorage.setItem('jarvis_groq_key', gKey); else localStorage.removeItem('jarvis_groq_key');
-      if (gemKey) localStorage.setItem('jarvis_gemini_key', gemKey); else localStorage.removeItem('jarvis_gemini_key');
-      if (settingsModal) settingsModal.style.display = 'none';
-      if (hasAnyKey()) $('reply').textContent = 'API Key save ho gayi, Boss. Systems fully online!';
-      else $('reply').textContent = 'Boss, pehle API Key set karo.';
-    };
+  function openSettings(){
+    PROVIDER_LIST.forEach(p => {
+      $('key_' + p).value = getKey(p);
+      $('key_' + p).type = 'password';
+      $('model_' + p).value = lsGet('jarvis_' + p + '_model');
+      $('model_' + p).placeholder = DEFAULT_MODEL[p];
+      $('test_' + p).textContent = ''; $('test_' + p).className = 'ktest';
+    });
+    $('primarySel').value = getPrimary();
+    refreshBadges();
+    settingsModal.style.display = 'flex';
   }
+  function closeSettings(){ settingsModal.style.display = 'none'; }
+  $('settingsBtn').onclick = openSettings;
+  $('closeSettingsBtn').onclick = closeSettings;
+  settingsModal.addEventListener('click', e => { if (e.target === settingsModal) closeSettings(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && settingsModal.style.display === 'flex') closeSettings(); });
+  $('primarySel').onchange = refreshBadges;
+  PROVIDER_LIST.forEach(p => $('key_' + p).addEventListener('input', refreshBadges));
+  document.querySelectorAll('[data-show]').forEach(btn => btn.onclick = () => {
+    const i = $('key_' + btn.dataset.show); i.type = i.type === 'password' ? 'text' : 'password';
+  });
+  document.querySelectorAll('[data-test]').forEach(btn => btn.onclick = () => testProvider(btn.dataset.test));
+  $('saveSettingsBtn').onclick = () => {
+    PROVIDER_LIST.forEach(p => {
+      lsSet('jarvis_' + p + '_key', ($('key_' + p).value || '').trim());
+      lsSet('jarvis_' + p + '_model', ($('model_' + p).value || '').trim());
+    });
+    lsSet('jarvis_primary', $('primarySel').value);
+    closeSettings();
+    if (hasAnyKey()){ $('reply').textContent = 'API Key save ho gayi, Boss. Systems fully online!'; toast('Keys saved ✓'); }
+    else $('reply').textContent = 'Boss, pehle API Key set karo.';
+  };
 
   if ($('clearBtn')) $('clearBtn').onclick = () => { chatHistory = []; $('heard').textContent = ''; say('Memory reset ho gayi, Boss.'); };
 
@@ -745,35 +898,51 @@ window.addEventListener('DOMContentLoaded', () => {
 
 /* ---------------- PWA Service Worker & Install Prompt ---------------- */
 let deferredPrompt = null;
-if ('serviceWorker' in navigator) {
+const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker Registered!', reg))
-      .catch(err => console.error('Service Worker Registration Failed!', err));
+      .then(reg => console.log('Service Worker Registered', reg.scope))
+      .catch(err => console.error('Service Worker Registration Failed', err));
   });
 }
+
+window.addEventListener('DOMContentLoaded', () => {
+  const btn = $('installBtn');
+  if (!btn || isStandalone()) return;
+  if (isIOS) btn.style.display = 'inline-block';      // iOS: manual steps dikhayenge
+});
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  const installBtn = $('installBtn');
-  if (installBtn) installBtn.style.display = 'inline-block';
+  const btn = $('installBtn');
+  if (btn && !isStandalone()) btn.style.display = 'inline-block';
 });
 
-if ($('installBtn')) {
-  $('installBtn').addEventListener('click', () => {
-    if (deferredPrompt) {
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  const btn = $('installBtn'); if (btn) btn.style.display = 'none';
+  toast('JARVIS install ho gaya ✓');
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+  const btn = $('installBtn'); if (!btn) return;
+  btn.addEventListener('click', async () => {
+    if (deferredPrompt){
       deferredPrompt.prompt();
-      deferredPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('User accepted PWA install');
-        }
-        deferredPrompt = null;
-        $('installBtn').style.display = 'none';
-      });
+      try{ await deferredPrompt.userChoice; }catch(e){}
+      deferredPrompt = null;
+      btn.style.display = 'none';
+    } else if (isIOS){
+      alert('iPhone/iPad par install: Safari me Share button dabao, phir "Add to Home Screen" chuno.');
+    } else {
+      alert('Browser menu (⋮) kholo aur "Install app" / "Add to Home screen" chuno.');
     }
   });
-}
+});
 </script>
 </body>
 </html>
