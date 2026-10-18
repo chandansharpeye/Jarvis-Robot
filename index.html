@@ -11,20 +11,20 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="JARVIS">
-  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{
   --bg:#05060f; --panel:rgba(12,20,60,.75); --line:#2b4a9a;
   --blue:#2fa8ff; --pink:#ff3fd8; --text:#e6f1ff; --dim:#7b8fc0;
-  --state:#6ac8ff; --glow:rgba(110,120,255,.55);
+  --state:#6ac8ff; --glow:rgba(110,120,255,.55); --blueRGB:47,168,255; --pinkRGB:255,63,216; --sheet:#0c143c;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;min-height:100%}
 body{
   background:
-    radial-gradient(circle at 85% 25%,rgba(255,63,216,.20),transparent 50%),
-    radial-gradient(circle at 12% 25%,rgba(47,168,255,.22),transparent 50%),
+    radial-gradient(circle at 85% 25%,rgba(var(--pinkRGB),.20),transparent 50%),
+    radial-gradient(circle at 12% 25%,rgba(var(--blueRGB),.22),transparent 50%),
     var(--bg);
   color:var(--text);
   font-family:"Segoe UI",Roboto,Tahoma,sans-serif;
@@ -44,15 +44,15 @@ h1{
 body::before{
   content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
   background-image:
-    linear-gradient(rgba(63,184,255,.09) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(63,184,255,.09) 1px,transparent 1px);
+    linear-gradient(rgba(var(--blueRGB),.09) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(var(--blueRGB),.09) 1px,transparent 1px);
   background-size:38px 38px;
   -webkit-mask-image:radial-gradient(circle at 50% 30%,#000 15%,transparent 75%);
   mask-image:radial-gradient(circle at 50% 30%,#000 15%,transparent 75%);
 }
 body::after{
   content:"";position:fixed;left:0;right:0;top:-12%;height:12%;z-index:-1;pointer-events:none;
-  background:linear-gradient(180deg,transparent,rgba(63,184,255,.12),transparent);
+  background:linear-gradient(180deg,transparent,rgba(var(--blueRGB),.12),transparent);
   animation:sweep 7s linear infinite;
 }
 @keyframes sweep{to{transform:translateY(900%)}}
@@ -129,7 +129,7 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
 .controls{flex-wrap:wrap}
 /* settings modal */
 #settingsModal{display:none;position:fixed;inset:0;background:rgba(5,6,15,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;align-items:center;justify-content:center;padding:12px}
-.sheet{background:#0c143c;border:1px solid var(--blue);border-radius:14px;padding:18px;max-width:460px;width:100%;max-height:92vh;overflow-y:auto;color:var(--text);box-shadow:0 0 24px var(--glow)}
+.sheet{background:var(--sheet);border:1px solid var(--blue);border-radius:14px;padding:18px;max-width:460px;width:100%;max-height:92vh;overflow-y:auto;color:var(--text);box-shadow:0 0 24px var(--glow)}
 .sheet h2{margin:0 0 6px;font-size:20px;color:var(--blue);text-align:center}
 .sheet .hint{font-size:12.5px;color:var(--dim);line-height:1.45;margin:0 0 14px;text-align:center}
 .kbox{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:rgba(5,6,15,.55)}
@@ -147,7 +147,27 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
 .ktest{font-size:12px;min-height:16px;margin-top:6px;color:var(--dim)}
 .ktest.good{color:#4dffb4}.ktest.bad{color:#ff6b7a}
 .sheetBtns{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
-#toast{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);background:#0c143c;border:1px solid var(--blue);color:var(--text);padding:10px 16px;border-radius:10px;font-size:13px;z-index:10000;display:none;max-width:90%;text-align:center}
+#toast{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--sheet);border:1px solid var(--blue);color:var(--text);padding:10px 16px;border-radius:10px;font-size:13px;z-index:10000;display:none;max-width:90%;text-align:center}
+.modal{display:none;position:fixed;inset:0;background:rgba(5,6,15,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;align-items:center;justify-content:center;padding:12px}
+.row{display:flex;gap:6px;margin-bottom:8px}.row input{flex:1;min-width:0;padding:10px;border-radius:8px;border:1px solid var(--line);background:#05060f;color:#fff;font:inherit;font-size:14px}
+.sheet h3{margin:12px 0 6px;font-size:14px;color:var(--pink)}
+.item{display:flex;gap:8px;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.08);padding:6px 0;font-size:14px;word-break:break-word}
+.item.done span{text-decoration:line-through;color:var(--dim)}.item button{padding:4px 9px;font-size:12px}
+.log{font-size:13px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)}.log b{color:var(--blue)}.log.j b{color:var(--pink)}
+.sheet input[type=range]{padding:0;accent-color:var(--blue)}
+#imgPrev{display:none;align-items:center;gap:8px;margin:6px 0}#imgPrev img{height:54px;border-radius:8px;border:1px solid var(--line)}
+.browL,.browR,.smile{transform-box:fill-box;transform-origin:center;transition:.3s}
+.eyeL,.eyeR{transition:scale .3s}
+#app[data-mood=happy] .browL,#app[data-mood=happy] .browR{translate:0 -3px}
+#app[data-mood=happy] .smile{scale:1.15 1.5}
+#app[data-mood=happy] .eyeL,#app[data-mood=happy] .eyeR{scale:1 .85}
+#app[data-mood=sad] .browL{rotate:-14deg}#app[data-mood=sad] .browR{rotate:14deg}
+#app[data-mood=sad] .smile{scale:1 -1;translate:0 4px}
+#app[data-mood=angry] .browL{rotate:16deg;translate:0 3px}#app[data-mood=angry] .browR{rotate:-16deg;translate:0 3px}
+#app[data-mood=angry] .smile{scale:1 -.5;translate:0 3px}
+#app[data-mood=surprised] .browL,#app[data-mood=surprised] .browR{translate:0 -7px}
+#app[data-mood=surprised] .eyeL,#app[data-mood=surprised] .eyeR{scale:1.2}
+#app[data-mood=surprised] .mouthOpen{transform:scaleY(.9)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
@@ -264,8 +284,8 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
     <line class="seam" x1="200" y1="64" x2="200" y2="234"/>
 
     <!-- brows -->
-    <path d="M157 136 Q172 129 187 136" fill="none" stroke="#34425e" stroke-width="2.4" stroke-linecap="round"/>
-    <path d="M213 136 Q228 129 243 136" fill="none" stroke="#e9f4ff" stroke-width="2.4" stroke-linecap="round" opacity=".75"/>
+    <path class="browL" d="M157 136 Q172 129 187 136" fill="none" stroke="#34425e" stroke-width="2.4" stroke-linecap="round"/>
+    <path class="browR" d="M213 136 Q228 129 243 136" fill="none" stroke="#e9f4ff" stroke-width="2.4" stroke-linecap="round" opacity=".75"/>
 
     <!-- eyes -->
     <g class="eyeL">
@@ -286,7 +306,7 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
     <!-- mouth -->
     <g class="mouth">
       <ellipse class="mouthOpen" cx="200" cy="200" rx="12" ry="7" fill="#0a1236"/>
-      <path d="M180 196 Q200 208 220 196" fill="none" stroke="#2a3a6c" stroke-width="2.4" stroke-linecap="round"/>
+      <path class="smile" d="M180 196 Q200 208 220 196" fill="none" stroke="#2a3a6c" stroke-width="2.4" stroke-linecap="round"/>
       <path d="M200 202 Q210 205 220 197" fill="none" stroke="#eaf4ff" stroke-width="1.2" opacity=".55"/>
     </g>
 
@@ -301,6 +321,7 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
 <div id="heard"></div>
 <div id="reply">Systems online, Boss. Bolo, main sun raha hoon.</div>
 
+<div id="imgPrev"><img id="imgThumb" alt="photo"><button id="imgX" type="button">✕</button></div>
 <div class="controls">
   <input id="msg" placeholder="Type a command..." autocomplete="off" enterkeyhint="send">
   <button id="send">Send</button>
@@ -310,6 +331,13 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
 
 <div class="opts">
   <button id="settingsBtn" title="API Key Settings">🔑 API Keys</button>
+  <button id="photoBtn" title="Photo se sawal">📷 Photo</button>
+  <button id="wakeBtn" title="Hey Jarvis">👂 Wake: OFF</button>
+  <button id="webBtn" title="Web search">🌐 Web: ON</button>
+  <button id="notesBtn" title="Notes, tasks, timers">📝 Notes</button>
+  <button id="histBtn" title="Chat history">📜 History</button>
+  <button id="prefsBtn" title="Voice, theme">🎛 Settings</button>
+  <input id="photoIn" type="file" accept="image/*" style="display:none">
   <button id="langBtn" title="Mic language">🌐 Mic: Hinglish</button>
   <button id="autoBtn" title="Auto listen again after reply">🔁 Auto Mic: OFF</button>
   <button id="voiceBtn" title="Check voice output">🔊 Test Voice</button>
@@ -371,12 +399,30 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
     </div>
   </div>
 </div>
+<div id="prefsModal" class="modal"><div class="sheet">
+  <h2>🎛 Voice &amp; Theme</h2>
+  <div class="kbox"><label style="margin-top:0">Voice</label><select id="voiceSel"></select>
+  <label>Pitch (kam = bhari): <span id="pitchV"></span></label><input id="pitchR" type="range" min="0.1" max="2" step="0.05">
+  <label>Speed: <span id="rateV"></span></label><input id="rateR" type="range" min="0.5" max="2" step="0.05">
+  <div style="margin-top:8px"><button class="mini" id="vtestBtn" type="button">🔊 Test voice</button></div></div>
+  <div class="kbox"><label style="margin-top:0">Theme</label><select id="themeSel"><option value="arc">Arc Blue</option><option value="red">Iron Red</option><option value="green">Matrix Green</option><option value="gold">Solar Gold</option></select></div>
+  <div class="sheetBtns"><button data-close type="button">Close</button></div></div></div>
+<div id="toolsModal" class="modal"><div class="sheet">
+  <h2>📝 Notes, Tasks &amp; Timers</h2>
+  <h3>Notes</h3><div class="row"><input id="noteIn" placeholder="Naya note..."><button class="mini" id="noteAdd" type="button">Add</button></div><div id="notesList"></div>
+  <h3>To-do</h3><div class="row"><input id="taskIn" placeholder="Naya task..."><button class="mini" id="taskAdd" type="button">Add</button></div><div id="todosList"></div>
+  <h3>⏰ Timers / Reminders</h3><div id="remsList"></div>
+  <div class="sheetBtns"><button data-close type="button">Close</button></div></div></div>
+<div id="histModal" class="modal"><div class="sheet">
+  <h2>📜 Chat History</h2><div id="histList"></div>
+  <div class="sheetBtns"><button id="histClear" type="button">Clear</button><button data-close type="button">Close</button></div></div></div>
 <div id="toast"></div>
 
 <script>
 /* =====================================================
    🔑 SETTINGS (keys settings box se aati hain, code me mat likho)
    ===================================================== */
+var PC = {a:'63,184,255', b:'255,63,216', fa:'120,210,255', fb:'255,120,230'};
 const PROVIDER_LIST = ['groq','gemini','openai','claude'];
 const PROVIDER_NAME = {groq:'Groq', gemini:'Gemini', openai:'OpenAI', claude:'Claude'};
 const DEFAULT_MODEL = {
@@ -389,8 +435,8 @@ const MAX_TOKENS = 500;
 const HISTORY_LIMIT = 12;            // last N messages remembered
 
 /* 🤖 ROBOTIC MALE VOICE SETTINGS */
-const VOICE_PITCH = 0.55;   // 0.1 - 2  (kam = bhari/robotic)
-const VOICE_RATE  = 0.93;   // 0.5 - 2  (kam = dheere, mechanical)
+let VOICE_PITCH = parseFloat(lsGet("jarvis_pitch")) || 0.55;   // 0.1 - 2  (kam = bhari/robotic)
+let VOICE_RATE  = parseFloat(lsGet("jarvis_rate")) || 0.93;   // 0.5 - 2  (kam = dheere, mechanical)
 
 /* ---------------- error reporter ---------------- */
 window.addEventListener('error', e => {
@@ -401,7 +447,7 @@ window.addEventListener('error', e => {
 /* ---------------- helpers ---------------- */
 const $ = id => document.getElementById(id);
 const app = $('app');
-let chatHistory = [];
+let chatHistory = (()=>{ try{ return JSON.parse(lsGet('jarvis_hist')||'[]'); }catch(e){ return []; } })();
 let speaking = false, thinking = false, listening = false;
 let recog = null;
 let autoMic = false;
@@ -436,6 +482,9 @@ const MALE   = /male|man|david|mark|guy|ravi|prabhat|madhur|rishi|hemant|daniel|
 function pickVoice(hindi){
   if (!('speechSynthesis' in window)) return null;
   const all = speechSynthesis.getVoices();
+  const sv = lsGet('jarvis_voice');
+  const saved = sv && all.find(v => v.name === sv);
+  if (saved && saved.lang.toLowerCase().startsWith(hindi ? 'hi' : 'en')) return saved;
   const pool = all.filter(v => v.lang.toLowerCase().startsWith(hindi ? 'hi' : 'en'));
   if (!pool.length) return null;
   let best = null, bestScore = -1;
@@ -519,18 +568,21 @@ const SYSTEM_PROMPT =
   "Address the user as 'Boss'. You understand English, Hindi and Hinglish perfectly. "+
   "Reply in the language the user used: English question -> English reply; Hindi or Hinglish -> natural, fluent Hinglish. "+
   "Keep it brief: 1 to 3 short sentences, because it is spoken aloud. No markdown, no emojis, no lists. "+
-  "OUTPUT FORMAT, exactly two lines and nothing else:\n" +
+  "OUTPUT FORMAT, exactly three lines and nothing else:\n" +
   "SHOW: <your reply. Hinglish must be written in Roman letters>\n" +
   "SAY: <the same reply for the voice engine: Hindi words in Devanagari script, English words in Latin letters. " +
-  "If the reply is fully English, SAY is identical to SHOW>.";
+  "If the reply is fully English, SAY is identical to SHOW>.\n" +
+  "MOOD: <one word: happy, neutral, sad, angry or surprised>";
 
 function parseReply(raw){
-  const clean = raw.trim();
+  let clean = raw.trim(), mood = '';
+  const mm = clean.match(/\n?\s*MOOD:\s*([a-z]+)\s*$/i);
+  if (mm){ mood = mm[1].toLowerCase(); clean = clean.slice(0, mm.index).trim(); }
   const mShow = clean.match(/SHOW:\s*([\s\S]*?)(?:\n\s*SAY:|$)/i);
   const mSay  = clean.match(/SAY:\s*([\s\S]*)$/i);
   const show = (mShow && mShow[1].trim()) || clean.replace(/^SAY:\s*/i,'').trim();
   const sayT = (mSay && mSay[1].trim()) || show;
-  return {show, say: sayT};
+  return {show, say: sayT, mood};
 }
 
 async function readJson(res){
@@ -542,8 +594,8 @@ async function callGroq(key, msgs, system){
     method:'POST',
     headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
     body: JSON.stringify({
-      model: getModel('groq'), max_tokens: MAX_TOKENS, temperature: 0.7,
-      messages:[{role:'system', content:system}, ...msgs]
+      model: msgs.some(m => m.image) ? 'meta-llama/llama-4-scout-17b-16e-instruct' : getModel('groq'), max_tokens: MAX_TOKENS, temperature: 0.7,
+      messages: oaMsgs(msgs, system)
     })
   });
   const data = await readJson(res);
@@ -558,7 +610,7 @@ async function callOpenAI(key, msgs, system){
     headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
     body: JSON.stringify({
       model: getModel('openai'), max_completion_tokens: MAX_TOKENS,
-      messages:[{role:'system', content:system}, ...msgs]
+      messages: oaMsgs(msgs, system)
     })
   });
   const data = await readJson(res);
@@ -579,7 +631,7 @@ async function callClaude(key, msgs, system){
     body: JSON.stringify({
       model: getModel('claude'), max_tokens: MAX_TOKENS, temperature: 0.7,
       system: system,
-      messages: msgs
+      messages: msgs.map(clMsg)
     })
   });
   const data = await readJson(res);
@@ -597,8 +649,8 @@ async function callGemini(key, msgs, system, noThinkingCfg){
     headers:{'x-goog-api-key':key,'Content-Type':'application/json'},
     body: JSON.stringify({
       systemInstruction:{parts:[{text:system}]},
-      contents: msgs.map(m => ({role: m.role==='assistant' ? 'model' : 'user', parts:[{text:m.content}]})),
-      generationConfig: gen
+      contents: msgs.map(gmMsg),
+      generationConfig: gen, ...(msgs.some(m => m.web) ? {tools:[{google_search:{}}]} : {})
     })
   });
   const data = await readJson(res);
@@ -611,14 +663,52 @@ async function callGemini(key, msgs, system, noThinkingCfg){
 
 const PROVIDERS = {groq:callGroq, gemini:callGemini, openai:callOpenAI, claude:callClaude};
 
+let pendingImage = null;
+const NEEDS_WEB = /(news|khabar|latest|aaj ka|today|score|match|jeeta|price|rate|kaun hai|who is|what is|kya hai|search|dhundo|ipl|result|stock|trending|abhi)/i;
+function mtext(m){ return (m.ctx ? 'Web results (may be partial, use if relevant):\n' + m.ctx + '\n\nQuestion: ' : '') + m.content; }
+function oaMsgs(msgs, system){
+  return [{role:'system', content:system}, ...msgs.map(m => ({role:m.role, content: m.image
+    ? [{type:'text', text:mtext(m)}, {type:'image_url', image_url:{url:'data:'+m.image.mime+';base64,'+m.image.data}}] : mtext(m)}))];
+}
+function clMsg(m){
+  return {role:m.role, content: m.image
+    ? [{type:'image', source:{type:'base64', media_type:m.image.mime, data:m.image.data}}, {type:'text', text:mtext(m)}] : mtext(m)};
+}
+function gmMsg(m){
+  const parts = [{text:mtext(m)}];
+  if (m.image) parts.unshift({inlineData:{mimeType:m.image.mime, data:m.image.data}});
+  return {role: m.role==='assistant' ? 'model' : 'user', parts};
+}
+async function webContext(q){
+  try{
+    const term = q.replace(/^(search karo|search|dhundo|google)\s*/i,'').slice(0,120);
+    const r = await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&srlimit=3&format=json&origin=*&srsearch='+encodeURIComponent(term));
+    const d = await r.json();
+    const items = (d.query && d.query.search || []).map(x => x.title + ': ' + x.snippet.replace(/<[^>]+>/g,''));
+    let ddg = '';
+    try{ const r2 = await fetch('https://api.duckduckgo.com/?format=json&no_html=1&skip_disambig=1&q='+encodeURIComponent(term)); ddg = (await r2.json()).AbstractText || ''; }catch(e){}
+    return (ddg ? ddg + '\n' : '') + items.join('\n');
+  }catch(e){ return ''; }
+}
+let chatLog = (()=>{ try{ return JSON.parse(lsGet('jarvis_log')||'[]'); }catch(e){ return []; } })();
+function saveHist(){
+  lsSet('jarvis_hist', JSON.stringify(chatHistory.map(m => ({role:m.role, content:m.content}))));
+  lsSet('jarvis_log', JSON.stringify(chatLog.slice(-150)));
+}
+function logChat(r, t){ chatLog.push({r, t, ts:Date.now()}); }
+
 async function askBrain(prompt){
   if (!hasAnyKey())
     return {show:"Boss, API key missing hai. Neeche 'API Keys' button dabakar key daalo.", say:"Boss, API key missing hai. Key set karo."};
 
   thinking = true; refreshState();
-  chatHistory.push({role:'user', content:prompt});
+  const msg = {role:'user', content:prompt};
+  const hadImg = !!pendingImage;
+  if (pendingImage){ msg.image = pendingImage; pendingImage = null; clearPrev(); }
+  else if (webOn && NEEDS_WEB.test(prompt)){ msg.web = true; msg.ctx = await webContext(prompt); }
+  chatHistory.push(msg);
   if (chatHistory.length > HISTORY_LIMIT) chatHistory = chatHistory.slice(-HISTORY_LIMIT);
-  while (chatHistory.length && chatHistory[0].role !== 'user') chatHistory.shift();   // Claude/Gemini need user-first
+  while (chatHistory.length && chatHistory[0].role !== 'user') chatHistory.shift();
 
   const primary = getPrimary();
   const order = [primary, ...PROVIDER_LIST.filter(p => p !== primary)];
@@ -630,8 +720,12 @@ async function askBrain(prompt){
       try{
         const r = await PROVIDERS[name](key, chatHistory, SYSTEM_PROMPT);
         if (r.ok){
+          delete msg.image; delete msg.ctx; delete msg.web;
+          if (hadImg) msg.content = '[photo] ' + prompt;
           chatHistory.push({role:'assistant', content:r.text});
-          return parseReply(r.text);
+          const pr = parseReply(r.text);
+          logChat('u', prompt); logChat('j', pr.show); saveHist();
+          return pr;
         }
         lastErr = PROVIDER_NAME[name] + ' ' + r.status + ': ' + r.err;
         console.warn('Provider failed', lastErr);
@@ -641,7 +735,7 @@ async function askBrain(prompt){
       }
     }
     chatHistory.pop();
-    return {show:"Boss, AI core fail ho gaya. Key ya internet check karo. (" + lastErr + ")", say:"Boss, AI core fail ho gaya. Key ya internet check karo."};
+    return {show:"Boss, AI core fail ho gaya. Key ya internet check karo. (" + lastErr + ")", say:"Boss, AI core fail ho gaya. Key ya internet check karo.", mood:'sad'};
   }finally{
     thinking = false; refreshState();
   }
@@ -674,6 +768,8 @@ const SITES = {
 
 async function respond(text){
   const q = text.toLowerCase();
+  if (pendingImage){ const r = await askBrain(text); setMood(r.mood); return say(r.show, afterTurn, r.say); }
+  if (await localCmd(text, q)) return;
 
   if (/(what('?s)? the time|current time|time kya|abhi.*time|kitne baj|samay kya|\btime batao|\btell me the time)/.test(q)){
     const t = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
@@ -692,7 +788,7 @@ async function respond(text){
       }
     }
   }
-  if (/^(search|google|dhundo|search karo)\b/.test(q)){
+  if (/^google\b/.test(q)){
     const term = text.replace(/^(search karo|search|google|dhundo)\s*/i,'');
     if (term){
       say('Searching ' + term + ', Boss.', afterTurn);
@@ -702,10 +798,11 @@ async function respond(text){
   }
 
   const r = await askBrain(text);
+  setMood(r.mood);
   say(r.show, afterTurn, r.say);
 }
 
-function afterTurn(){ if (autoMic) setTimeout(listen, 400); }
+function afterTurn(){ if (autoMic) setTimeout(listen, 400); else setTimeout(wakeStart, 500); }
 
 function send(){
   const text = $('msg').value.trim();
@@ -720,7 +817,7 @@ function listen(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR){ say('Is browser me voice input nahi hai. Chrome ya Edge use karo, ya type karo.'); return; }
   if (listening) return;
-  speakToken++;
+  speakToken++; wakeStop();
   if ('speechSynthesis' in window) speechSynthesis.cancel();
   speaking = false;
 
@@ -755,6 +852,7 @@ function listen(){
     const t = finalText.trim();
     if (t) respond(t);
     else if (autoMic && !speaking && !thinking) setTimeout(listen, 600);
+    else if (!t && !speaking && !thinking) setTimeout(wakeStart, 500);
   };
   try{ recog.start(); }catch(e){ listening = false; refreshState(); }
 }
@@ -810,14 +908,14 @@ $('voiceBtn').onclick = () => {
       for (let j = i + 1; j < pts.length; j++){
         const b = pts[j], dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy);
         if (d < maxD){
-          cx.strokeStyle = (a.pink || b.pink ? 'rgba(255,63,216,' : 'rgba(63,184,255,') + ((1 - d / maxD) * .35).toFixed(3) + ')';
+          cx.strokeStyle = (a.pink || b.pink ? 'rgba(' + PC.b + ',' : 'rgba(' + PC.a + ',') + ((1 - d / maxD) * .35).toFixed(3) + ')';
           cx.lineWidth = .8;
           cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke();
         }
       }
     }
     for (const p of pts){
-      cx.fillStyle = p.pink ? 'rgba(255,120,230,.9)' : 'rgba(120,210,255,.9)';
+      cx.fillStyle = p.pink ? 'rgba(' + PC.fb + ',.9)' : 'rgba(' + PC.fa + ',.9)';
       cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, 6.2832); cx.fill();
     }
     if (!still && !document.hidden) requestAnimationFrame(frame);
@@ -826,6 +924,279 @@ $('voiceBtn').onclick = () => {
   addEventListener('resize', () => { init(); if (still) frame(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && !still) frame(); });
 })();
+
+/* =====================================================
+   ✨ UPGRADE FEATURES
+   ===================================================== */
+let webOn = lsGet('jarvis_web') !== '0';
+let wakeOn = lsGet('jarvis_wake') === '1', wakeRec = null, wakeTrig = false;
+
+/* ---- face moods ---- */
+let moodT = null;
+function setMood(m, ms){
+  if (!['happy','sad','angry','surprised'].includes(m)) m = '';
+  app.dataset.mood = m; clearTimeout(moodT);
+  if (m) moodT = setTimeout(() => app.dataset.mood = '', ms || 8000);
+}
+
+/* ---- themes (SVG recolor by hue map) ---- */
+const THEMES = {arc:null, red:[4,42], green:[145,75], gold:[45,20]};
+function hex2hsl(hx){ hx = hx.replace('#',''); if (hx.length == 3) hx = hx.split('').map(c => c+c).join('');
+  const r = parseInt(hx.substr(0,2),16)/255, g = parseInt(hx.substr(2,2),16)/255, b = parseInt(hx.substr(4,2),16)/255;
+  const mx = Math.max(r,g,b), mn = Math.min(r,g,b), l = (mx+mn)/2, d = mx-mn; let h = 0, s = 0;
+  if (d){ s = d/(1-Math.abs(2*l-1)); h = mx==r ? ((g-b)/d)%6 : mx==g ? (b-r)/d+2 : (r-g)/d+4; h *= 60; if (h < 0) h += 360; }
+  return [h,s,l]; }
+function hsl2hex(h,s,l){ h = ((h%360)+360)%360; const c = (1-Math.abs(2*l-1))*s, x = c*(1-Math.abs((h/60)%2-1)), m = l-c/2; let r,g,b;
+  if (h<60) [r,g,b]=[c,x,0]; else if (h<120) [r,g,b]=[x,c,0]; else if (h<180) [r,g,b]=[0,c,x]; else if (h<240) [r,g,b]=[0,x,c]; else if (h<300) [r,g,b]=[x,0,c]; else [r,g,b]=[c,0,x];
+  return '#' + [r,g,b].map(v => Math.round((v+m)*255).toString(16).padStart(2,'0')).join(''); }
+function rgbStr(hx){ return [1,3,5].map(i => parseInt(hx.substr(i,2),16)).join(','); }
+function mapHex(hx,P,S){ const [h,s,l] = hex2hsl(hx); if (s < .12) return hx;
+  const t = Math.max(-.3, Math.min(1.3, (h-210)/100)); return hsl2hex(P + t*(S-P), s, l); }
+function applyTheme(name){
+  const T = THEMES[name] || null, P = T ? T[0] : 210, S = T ? T[1] : 310, root = document.documentElement.style;
+  document.querySelectorAll('#scene *').forEach(el => ['fill','stroke','stop-color'].forEach(a => {
+    const k = 'data-o-' + a;
+    if (!el.hasAttribute(k) && el.hasAttribute(a)) el.setAttribute(k, el.getAttribute(a));
+    const o = el.getAttribute(k);
+    if (o && /^#[0-9a-f]{3,6}$/i.test(o)) el.setAttribute(a, T ? mapHex(o,P,S) : o);
+  }));
+  const blue = T ? hsl2hex(P,1,.59) : '#2fa8ff', pink = T ? hsl2hex(S,1,.62) : '#ff3fd8';
+  root.setProperty('--blue', blue); root.setProperty('--pink', pink);
+  root.setProperty('--blueRGB', rgbStr(blue)); root.setProperty('--pinkRGB', rgbStr(pink));
+  root.setProperty('--line', T ? hsl2hex(P,.56,.4) : '#2b4a9a');
+  root.setProperty('--state', T ? hsl2hex(P,1,.7) : '#6ac8ff');
+  root.setProperty('--glow', 'rgba(' + rgbStr(T ? hsl2hex(P,1,.65) : '#6e78ff') + ',.55)');
+  root.setProperty('--sheet', T ? hsl2hex(P,.6,.14) : '#0c143c');
+  PC = {a:rgbStr(blue), b:rgbStr(pink), fa:rgbStr(T ? hsl2hex(P,1,.75) : '#78d2ff'), fb:rgbStr(T ? hsl2hex(S,1,.75) : '#ff78e6')};
+  lsSet('jarvis_theme', name);
+}
+
+/* ---- timers / alarms / reminders ---- */
+let rems = (()=>{ try{ return JSON.parse(lsGet('jarvis_rems')||'[]'); }catch(e){ return []; } })();
+let notes = (()=>{ try{ return JSON.parse(lsGet('jarvis_notes')||'[]'); }catch(e){ return []; } })();
+let todos = (()=>{ try{ return JSON.parse(lsGet('jarvis_todos')||'[]'); }catch(e){ return []; } })();
+const saveRems = () => lsSet('jarvis_rems', JSON.stringify(rems));
+const saveNotes = () => lsSet('jarvis_notes', JSON.stringify(notes));
+const saveTodos = () => lsSet('jarvis_todos', JSON.stringify(todos));
+function parseDur(q){
+  let ms = 0, m; const re = /(\d+(?:\.\d+)?)\s*(second|sec|सेकंड|minute|min|मिनट|hour|hr|ghant|घंट)/gi;
+  while ((m = re.exec(q))){ const n = parseFloat(m[1]), u = m[2].toLowerCase();
+    ms += n * (u[0]==='s' || u[0]==='स' ? 1e3 : u[0]==='m' || u[0]==='म' ? 6e4 : 36e5); }
+  return ms;
+}
+function parseClock(q){
+  const m = q.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|baje|बजे)?/i); if (!m) return 0;
+  let h = parseInt(m[1],10), mi = parseInt(m[2]||'0',10); if (h > 24 || mi > 59) return 0;
+  const pm = /pm|shaam|sham|raat|dopahar|evening|night/i.test(q), am = /\bam\b|subah|morning/i.test(q);
+  const now = new Date(), c = [];
+  if (pm && h < 12) h += 12; if (am && h === 12) h = 0;
+  const cands = (!pm && !am && h < 12) ? [h, h+12] : [h];
+  for (const hh of cands){ const d = new Date(now); d.setHours(hh, mi, 0, 0); if (d <= now) d.setDate(d.getDate()+1); c.push(d.getTime()); }
+  return Math.min(...c);
+}
+function beep(){ try{ const a = new (window.AudioContext || window.webkitAudioContext)();
+  [0,.35,.7].forEach(d => { const o = a.createOscillator(), g = a.createGain(); o.connect(g); g.connect(a.destination); o.frequency.value = 880; g.gain.value = .2; o.start(a.currentTime+d); o.stop(a.currentTime+d+.2); }); }catch(e){} }
+function notify(t){
+  try{ if (navigator.vibrate) navigator.vibrate([300,150,300]);
+    if ('Notification' in window && Notification.permission === 'granted'){
+      navigator.serviceWorker.getRegistration().then(r => r ? r.showNotification('JARVIS', {body:t, icon:'icon-192.png', vibrate:[300,150,300]}) : new Notification('JARVIS', {body:t})); }
+  }catch(e){}
+}
+function checkRems(){
+  const now = Date.now(), due = rems.filter(r => r.due <= now);
+  if (!due.length) return;
+  rems = rems.filter(r => r.due > now); saveRems(); renderTools();
+  due.forEach(r => { beep(); notify(r.label); setMood('surprised', 4000); say('Boss, ' + r.label + ' ka time ho gaya.', afterTurn); });
+}
+setInterval(checkRems, 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkRems(); });
+function fmtT(ts){ return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+function addRem(due, label){
+  rems.push({id:Date.now()+Math.random(), due, label}); saveRems(); renderTools();
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+}
+
+/* ---- device helpers ---- */
+let torchTrack = null;
+async function torch(on){
+  if (!on){ if (torchTrack){ torchTrack.stop(); torchTrack = null; } return true; }
+  const st = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+  const t = st.getVideoTracks()[0], c = t.getCapabilities && t.getCapabilities();
+  if (!c || !c.torch){ t.stop(); return false; }
+  await t.applyConstraints({advanced:[{torch:true}]}); torchTrack = t; return true;
+}
+const WCODE = {0:'saaf aasman',1:'mostly saaf',2:'thode baadal',3:'baadal',45:'kohra',48:'kohra',51:'halki phuhar',53:'phuhar',55:'phuhar',61:'halki barish',63:'barish',65:'tez barish',71:'barf',80:'barish ki bauchhar',81:'bauchhar',82:'tez bauchhar',95:'toofan',96:'toofan',99:'toofan'};
+async function weather(city){
+  let lat, lon, name = city;
+  if (city){
+    const g = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&name=' + encodeURIComponent(city))).json();
+    if (!g.results || !g.results[0]) return 'Boss, ' + city + ' city nahi mili.';
+    lat = g.results[0].latitude; lon = g.results[0].longitude; name = g.results[0].name;
+  } else {
+    const pos = await new Promise((ok, no) => navigator.geolocation.getCurrentPosition(ok, no, {timeout:10000}));
+    lat = pos.coords.latitude; lon = pos.coords.longitude; name = 'aapke area';
+  }
+  const w = (await (await fetch('https://api.open-meteo.com/v1/forecast?current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&latitude=' + lat + '&longitude=' + lon)).json()).current;
+  return 'Boss, ' + name + ' me abhi ' + Math.round(w.temperature_2m) + ' degree hai, ' + (WCODE[w.weather_code] || 'mausam theek') + ', humidity ' + w.relative_humidity_2m + ' percent, hawa ' + Math.round(w.wind_speed_10m) + ' km/h.';
+}
+
+/* ---- local commands ---- */
+async function localCmd(text, q){
+  const ok = (m, mood) => { if (mood) setMood(mood); say(m, afterTurn); return true; };
+  try{
+    let m;
+    if ((m = q.match(/^(?:mood|face)\s+(happy|sad|angry|surprised|neutral)/))){ setMood(m[1]); return ok('Mood ' + m[1] + ', Boss.'); }
+    if (/(cancel|delete|hata|band|clear).*(timer|alarm|reminder)/.test(q)){ rems = []; saveRems(); renderTools(); return ok('Saare timer cancel kar diye, Boss.'); }
+    if (/(timers?|alarms?|reminders?)\s*(list|dikhao|kitne|batao|kaun)/.test(q) || /(list|dikhao|kaun se).*(timers?|alarms?|reminders?)/.test(q)){
+      if (!rems.length) return ok('Boss, koi timer ya reminder set nahi hai.');
+      const n = rems.slice().sort((a,b) => a.due-b.due)[0];
+      return ok('Boss, ' + rems.length + ' set hain. Sabse pehle ' + n.label + ' ' + fmtT(n.due) + ' par.');
+    }
+    if (/(timer|alarm|remind|yaad dila|jaga|wake me)/.test(q)){
+      const dur = parseDur(q);
+      let label = text.replace(/(\d+(?:\.\d+)?)\s*(second|sec|minute|min|hour|hr|ghante|ghanta|घंटे|मिनट|सेकंड)\w*/gi,'').replace(/\b(set|lagao|laga do|timer|alarm|remind me|remind|reminder|yaad dilao|yaad dila do|jaga do|jagana|baad|me|mein|in|to|ki|ka|ke|ko|for|a|an|the|please)\b/gi,'').replace(/\s+/g,' ').trim();
+      if (dur > 0){ label = label || 'timer'; addRem(Date.now()+dur, label); return ok('Theek hai Boss, ' + label + ' ke liye ' + Math.round(dur/6e4*10)/10 + ' minute ka timer set.'); }
+      const at = parseClock(q);
+      if (at){ label = label.replace(/\d{1,2}(:\d{2})?\s*(am|pm|baje|बजे)?/gi,'').replace(/\b(subah|shaam|raat|dopahar)\b/gi,'').trim() || 'alarm'; addRem(at, label); return ok('Alarm set, Boss. ' + fmtT(at) + ' par ' + label + '.'); }
+    }
+    if (/\bnotes?\b/.test(q) && /(dikhao|sunao|list|padho|read|show|kya kya)/.test(q)){
+      if (!notes.length) return ok('Boss, abhi koi note nahi hai.');
+      return ok('Boss, aapke notes: ' + notes.slice(-5).map((n,i) => (i+1) + '. ' + n.text).join('. '));
+    }
+    if (/^(note|likh)\b|note (kar|down)/.test(q)){
+      const body = text.replace(/^.*?(note down|note kar lo|note karo|note kar do|note kar|note|likh lo|likh)[\s:,-]*/i,'').trim();
+      if (body){ notes.push({text:body, ts:Date.now()}); saveNotes(); renderTools(); return ok('Note kar liya, Boss.', 'happy'); }
+    }
+    if (/(todo|to-do|to do|task)/.test(q)){
+      if ((m = q.match(/(?:done|complete|ho gaya|kar diya)\s*(\d+)/)) && todos[m[1]-1]){ todos[m[1]-1].done = true; saveTodos(); renderTools(); return ok('Task ' + m[1] + ' complete mark kar diya.', 'happy'); }
+      if (/(dikhao|sunao|list|padho|kya kya|show)/.test(q)){
+        const open = todos.filter(t => !t.done);
+        return ok(open.length ? 'Boss, pending tasks: ' + open.map((t,i) => (i+1) + '. ' + t.text).join('. ') : 'Boss, koi pending task nahi hai.');
+      }
+      const body = text.replace(/^.*?(add|jodo|daalo|joddo|add karo|add kar do)[\s:,-]*(?:a |ek )?(?:todo|to-do|to do|task)?[\s:,-]*/i,'').replace(/\b(todo|to-do|task)\b/i,'').trim();
+      if (body && /(add|jodo|daalo|joddo)/.test(q)){ todos.push({text:body, done:false}); saveTodos(); renderTools(); return ok('Task add kar diya, Boss.'); }
+    }
+    if (/(battery|charge kitna)/.test(q)){
+      if (!navigator.getBattery) return ok('Is browser me battery info nahi milti, Boss.');
+      const b = await navigator.getBattery(); return ok('Boss, battery ' + Math.round(b.level*100) + ' percent hai' + (b.charging ? ', charging chal rahi hai.' : '.'));
+    }
+    if (/(flashlight|torch|batti|light (on|off|jala|band|chalu))/.test(q)){
+      const off = /(off|band|bujha)/.test(q);
+      const r = await torch(!off);
+      return ok(r ? (off ? 'Flashlight band, Boss.' : 'Flashlight on, Boss.') : 'Is device me flashlight control nahi ho raha, Boss.');
+    }
+    if ((m = q.match(/whatsapp.*?(\+?\d[\d\s-]{8,})\s*(?:ko|par|pe)?\s*(?:message|msg|bhejo|send)?\s*(.*)/))){
+      let n = m[1].replace(/\D/g,''); if (n.length === 10) n = '91' + n;
+      window.open('https://wa.me/' + n + (m[2] ? '?text=' + encodeURIComponent(m[2]) : ''), '_blank'); return ok('WhatsApp khol raha hoon, Boss.');
+    }
+    if ((m = q.match(/(?:call|phone|dial)\s*(?:karo|kar do|kar)?\s*(\+?\d[\d\s-]{5,})/))){
+      ok('Call laga raha hoon, Boss.'); location.href = 'tel:' + m[1].replace(/[^\d+]/g,''); return true;
+    }
+    if (/(weather|mausam|temperature|barish)/.test(q)){
+      const c = q.match(/(?:weather|mausam|temperature)\s*(?:in|of|ka|ke|me|mein)?\s*([a-z ]{3,})$/) || q.match(/([a-z]{3,})\s*(?:ka|ke|me|mein)\s*(?:weather|mausam|temperature)/);
+      const city = c ? c[1].replace(/\b(batao|bataiye|kya|hai|today|aaj|ka|ke|me|mein|kaisa|kitna)\b/g,'').trim() : '';
+      thinking = true; refreshState();
+      try{ return ok(await weather(city)); }finally{ thinking = false; refreshState(); }
+    }
+  }catch(e){ thinking = false; refreshState(); return ok('Boss, ye kaam nahi ho paya: ' + (e.message || e)); }
+  return false;
+}
+
+/* ---- wake word ("Hey Jarvis") ---- */
+function wakeStop(){ wakeTrig = true; if (wakeRec){ try{ wakeRec.abort(); }catch(e){} wakeRec = null; } }
+function wakeStart(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!wakeOn || !SR || wakeRec || listening || speaking || thinking) return;
+  wakeTrig = false;
+  const r = new SR(); wakeRec = r; r.lang = 'hi-IN'; r.continuous = true; r.interimResults = true;
+  r.onresult = e => {
+    if (wakeTrig) return;
+    for (let i = e.resultIndex; i < e.results.length; i++){
+      const t = e.results[i][0].transcript, m = t.match(/(jarvis|jarwis|jarvish|जार्विस|जारविस|जर्विस|ज़ार्विस)[\s,.!]*(.*)/i);
+      if (!m) continue;
+      const cmd = (m[2] || '').trim();
+      if (e.results[i].isFinal && cmd.length > 2){ wakeStop(); $('heard').textContent = 'You: ' + cmd; respond(cmd); }
+      else if (e.results[i].isFinal || !cmd){ wakeStop(); setMood('happy', 4000); say('Ji Boss?', () => listen()); }
+      return;
+    }
+  };
+  r.onerror = ev => { if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed'){ wakeOn = false; lsSet('jarvis_wake',''); updWake(); toast('Mic permission allow karo'); } };
+  r.onend = () => { if (wakeRec === r) wakeRec = null; if (wakeOn && !wakeTrig) setTimeout(wakeStart, 300); };
+  try{ r.start(); }catch(e){ wakeRec = null; }
+}
+function updWake(){ const b = $('wakeBtn'); b.textContent = '👂 Wake: ' + (wakeOn ? 'ON' : 'OFF'); b.classList.toggle('on', wakeOn); }
+
+/* ---- photo ---- */
+function clearPrev(){ $('imgPrev').style.display = 'none'; $('imgThumb').src = ''; }
+function loadPhoto(file){
+  const rd = new FileReader();
+  rd.onload = () => { const im = new Image(); im.onload = () => {
+    const k = Math.min(1, 1024 / Math.max(im.width, im.height)), c = document.createElement('canvas');
+    c.width = Math.round(im.width*k); c.height = Math.round(im.height*k); c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    const url = c.toDataURL('image/jpeg', .8);
+    pendingImage = {mime:'image/jpeg', data:url.split(',')[1]};
+    $('imgThumb').src = url; $('imgPrev').style.display = 'flex';
+    $('reply').textContent = 'Photo ready, Boss. Sawal type karo ya bolo, ya seedha Send dabao.';
+  }; im.src = rd.result; };
+  rd.readAsDataURL(file);
+}
+
+/* ---- panels ---- */
+function el(tag, txt, cls){ const e = document.createElement(tag); if (txt != null) e.textContent = txt; if (cls) e.className = cls; return e; }
+function xbtn(fn, t){ const b = el('button', t || '✕'); b.type = 'button'; b.onclick = fn; return b; }
+function renderTools(){
+  if (!$('notesList')) return;
+  const nl = $('notesList'), tl = $('todosList'), rl = $('remsList'); nl.innerHTML = tl.innerHTML = rl.innerHTML = '';
+  if (!notes.length) nl.appendChild(el('div','Koi note nahi','hint'));
+  notes.forEach((n,i) => { const d = el('div',null,'item'); d.append(el('span',n.text), xbtn(() => { notes.splice(i,1); saveNotes(); renderTools(); })); nl.appendChild(d); });
+  if (!todos.length) tl.appendChild(el('div','Koi task nahi','hint'));
+  todos.forEach((t,i) => { const d = el('div',null,'item' + (t.done ? ' done' : '')); d.append(el('span',(i+1)+'. '+t.text), xbtn(() => { t.done = !t.done; saveTodos(); renderTools(); }, t.done ? '↩' : '✓'), xbtn(() => { todos.splice(i,1); saveTodos(); renderTools(); })); tl.appendChild(d); });
+  if (!rems.length) rl.appendChild(el('div','Koi timer set nahi','hint'));
+  rems.slice().sort((a,b) => a.due-b.due).forEach(r => { const d = el('div',null,'item'); d.append(el('span', fmtT(r.due) + ' - ' + r.label), xbtn(() => { rems = rems.filter(x => x.id !== r.id); saveRems(); renderTools(); })); rl.appendChild(d); });
+}
+function renderHist(){
+  const h = $('histList'); h.innerHTML = '';
+  if (!chatLog.length) h.appendChild(el('div','Abhi koi history nahi.','hint'));
+  chatLog.slice(-60).forEach(x => { const d = el('div',null,'log ' + x.r); d.append(el('b', x.r === 'u' ? 'You: ' : 'Jarvis: '), document.createTextNode(x.t)); h.appendChild(d); });
+  h.scrollTop = h.scrollHeight;
+}
+const openM = id => { $(id).style.display = 'flex'; };
+
+window.addEventListener('DOMContentLoaded', () => {
+  applyTheme(lsGet('jarvis_theme') || 'arc');
+  document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m || e.target.hasAttribute('data-close')) m.style.display = 'none'; }));
+  $('photoBtn').onclick = () => $('photoIn').click();
+  $('photoIn').onchange = e => { if (e.target.files[0]) loadPhoto(e.target.files[0]); e.target.value = ''; };
+  $('imgX').onclick = () => { pendingImage = null; clearPrev(); };
+  const origSend = $('send').onclick;
+  $('send').onclick = () => { if (pendingImage && !$('msg').value.trim()) $('msg').value = 'Is photo me kya hai? Short me batao.'; origSend(); };
+  $('msg').addEventListener('keydown', e => { if (e.key === 'Enter' && pendingImage && !$('msg').value.trim()) $('send').onclick(); });
+  $('webBtn').textContent = '🌐 Web: ' + (webOn ? 'ON' : 'OFF');
+  $('webBtn').onclick = () => { webOn = !webOn; lsSet('jarvis_web', webOn ? '1' : '0'); $('webBtn').textContent = '🌐 Web: ' + (webOn ? 'ON' : 'OFF'); toast('Web search ' + (webOn ? 'ON' : 'OFF')); };
+  updWake();
+  $('wakeBtn').onclick = () => { wakeOn = !wakeOn; lsSet('jarvis_wake', wakeOn ? '1' : ''); updWake(); if (wakeOn){ toast('"Hey Jarvis" bolo'); wakeStart(); } else wakeStop(); };
+  $('notesBtn').onclick = () => { renderTools(); openM('toolsModal'); };
+  $('noteAdd').onclick = () => { const v = $('noteIn').value.trim(); if (v){ notes.push({text:v, ts:Date.now()}); saveNotes(); $('noteIn').value = ''; renderTools(); } };
+  $('taskAdd').onclick = () => { const v = $('taskIn').value.trim(); if (v){ todos.push({text:v, done:false}); saveTodos(); $('taskIn').value = ''; renderTools(); } };
+  $('histBtn').onclick = () => { renderHist(); openM('histModal'); };
+  $('histClear').onclick = () => { chatLog = []; chatHistory = []; saveHist(); renderHist(); };
+  /* voice & theme panel */
+  const vs = $('voiceSel');
+  function fillVoices(){
+    const cur = lsGet('jarvis_voice'); vs.innerHTML = '';
+    vs.appendChild(new Option('Auto (best male)', ''));
+    (speechSynthesis.getVoices ? speechSynthesis.getVoices() : []).forEach(v => vs.appendChild(new Option(v.name + ' (' + v.lang + ')', v.name)));
+    vs.value = cur;
+  }
+  $('prefsBtn').onclick = () => { fillVoices(); $('pitchR').value = VOICE_PITCH; $('rateR').value = VOICE_RATE; $('pitchV').textContent = VOICE_PITCH; $('rateV').textContent = VOICE_RATE; $('themeSel').value = lsGet('jarvis_theme') || 'arc'; openM('prefsModal'); };
+  vs.onchange = () => lsSet('jarvis_voice', vs.value);
+  $('pitchR').oninput = e => { VOICE_PITCH = parseFloat(e.target.value); $('pitchV').textContent = VOICE_PITCH; lsSet('jarvis_pitch', String(VOICE_PITCH)); };
+  $('rateR').oninput = e => { VOICE_RATE = parseFloat(e.target.value); $('rateV').textContent = VOICE_RATE; lsSet('jarvis_rate', String(VOICE_RATE)); };
+  $('themeSel').onchange = e => applyTheme(e.target.value);
+  $('vtestBtn').onclick = () => { setMood('happy', 4000); say('Hello Boss. Main Jarvis hoon.', null, 'Hello Boss. मैं JARVIS हूँ.'); };
+  renderTools(); checkRems();
+  if (wakeOn) setTimeout(wakeStart, 800);
+});
 
 /* ---------------- UI wiring ---------------- */
 window.addEventListener('DOMContentLoaded', () => {
@@ -890,7 +1261,7 @@ window.addEventListener('DOMContentLoaded', () => {
     else $('reply').textContent = 'Boss, pehle API Key set karo.';
   };
 
-  if ($('clearBtn')) $('clearBtn').onclick = () => { chatHistory = []; $('heard').textContent = ''; say('Memory reset ho gayi, Boss.'); };
+  if ($('clearBtn')) $('clearBtn').onclick = () => { chatHistory = []; saveHist(); $('heard').textContent = ''; say('Memory reset ho gayi, Boss.'); };
 
   if (!hasAnyKey()) $('reply').textContent = 'Boss, pehle neeche 🔑 API Keys button dabakar key daalo.';
 });
