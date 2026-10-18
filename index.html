@@ -333,6 +333,7 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
   <button id="settingsBtn" title="API Key Settings">🔑 API Keys</button>
   <button id="photoBtn" title="Photo se sawal">📷 Photo</button>
   <button id="wakeBtn" title="Hey Jarvis">👂 Wake: OFF</button>
+  <button id="xlBtn" title="Translator">🔁 Translate: OFF</button>
   <button id="webBtn" title="Web search">🌐 Web: ON</button>
   <button id="notesBtn" title="Notes, tasks, timers">📝 Notes</button>
   <button id="histBtn" title="Chat history">📜 History</button>
@@ -405,6 +406,7 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
   <label>Pitch (kam = bhari): <span id="pitchV"></span></label><input id="pitchR" type="range" min="0.1" max="2" step="0.05">
   <label>Speed: <span id="rateV"></span></label><input id="rateR" type="range" min="0.5" max="2" step="0.05">
   <div style="margin-top:8px"><button class="mini" id="vtestBtn" type="button">🔊 Test voice</button></div></div>
+  <div class="kbox"><label style="margin-top:0">Personality</label><select id="personaSel"><option value="">Butler (normal)</option><option value="funny">Funny</option><option value="serious">Serious</option><option value="teacher">Teacher</option></select></div>
   <div class="kbox"><label style="margin-top:0">Theme</label><select id="themeSel"><option value="arc">Arc Blue</option><option value="red">Iron Red</option><option value="green">Matrix Green</option><option value="gold">Solar Gold</option></select></div>
   <div class="sheetBtns"><button data-close type="button">Close</button></div></div></div>
 <div id="toolsModal" class="modal"><div class="sheet">
@@ -412,6 +414,7 @@ button:focus-visible,#msg:focus-visible{outline:2px solid var(--pink);outline-of
   <h3>Notes</h3><div class="row"><input id="noteIn" placeholder="Naya note..."><button class="mini" id="noteAdd" type="button">Add</button></div><div id="notesList"></div>
   <h3>To-do</h3><div class="row"><input id="taskIn" placeholder="Naya task..."><button class="mini" id="taskAdd" type="button">Add</button></div><div id="todosList"></div>
   <h3>⏰ Timers / Reminders</h3><div id="remsList"></div>
+  <h3>📇 Contacts (call / WhatsApp)</h3><div class="row"><input id="cName" placeholder="Naam (jaise Mom)"><input id="cTel" placeholder="Number" inputmode="tel"></div><div class="row"><button class="mini" id="cAdd" type="button">Add</button><button class="mini" id="impBtn" type="button">📲 Phone se import</button></div><div id="contList"></div>
   <div class="sheetBtns"><button data-close type="button">Close</button></div></div></div>
 <div id="histModal" class="modal"><div class="sheet">
   <h2>📜 Chat History</h2><div id="histList"></div>
@@ -568,97 +571,93 @@ const SYSTEM_PROMPT =
   "Address the user as 'Boss'. You understand English, Hindi and Hinglish perfectly. "+
   "Reply in the language the user used: English question -> English reply; Hindi or Hinglish -> natural, fluent Hinglish. "+
   "Keep it brief: 1 to 3 short sentences, because it is spoken aloud. No markdown, no emojis, no lists. "+
-  "OUTPUT FORMAT, exactly three lines and nothing else:\n" +
-  "SHOW: <your reply. Hinglish must be written in Roman letters>\n" +
-  "SAY: <the same reply for the voice engine: Hindi words in Devanagari script, English words in Latin letters. " +
-  "If the reply is fully English, SAY is identical to SHOW>.\n" +
+  "OUTPUT FORMAT, exactly these three labelled parts and nothing else:\n" +
+  "SAY: <your reply for the voice engine: Hindi words in Devanagari script, English words in Latin letters>\n" +
+  "SHOW: <the same reply for the screen: Hinglish written in Roman letters; if fully English, identical to SAY>\n" +
   "MOOD: <one word: happy, neutral, sad, angry or surprised>";
 
 function parseReply(raw){
-  let clean = raw.trim(), mood = '';
-  const mm = clean.match(/\n?\s*MOOD:\s*([a-z]+)\s*$/i);
-  if (mm){ mood = mm[1].toLowerCase(); clean = clean.slice(0, mm.index).trim(); }
-  const mShow = clean.match(/SHOW:\s*([\s\S]*?)(?:\n\s*SAY:|$)/i);
-  const mSay  = clean.match(/SAY:\s*([\s\S]*)$/i);
-  const show = (mShow && mShow[1].trim()) || clean.replace(/^SAY:\s*/i,'').trim();
-  const sayT = (mSay && mSay[1].trim()) || show;
-  return {show, say: sayT, mood};
+  const t = raw.trim(), re = /(^|\n)(SHOW|SAY|MOOD):/g, pos = []; let m;
+  while ((m = re.exec(t))) pos.push({k:m[2], s:m.index, e:m.index + m[0].length});
+  const o = {};
+  pos.forEach((q, i) => { o[q.k] = t.slice(q.e, i+1 < pos.length ? pos[i+1].s : t.length).trim(); });
+  const show = o.SHOW || o.SAY || t;
+  return {show, say: o.SAY || show, mood: (o.MOOD || '').toLowerCase().replace(/[^a-z]/g,'')};
 }
 
 async function readJson(res){
   try{ return await res.json(); }catch(e){ return {}; }
 }
 
-async function callGroq(key, msgs, system){
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-    body: JSON.stringify({
-      model: msgs.some(m => m.image) ? 'meta-llama/llama-4-scout-17b-16e-instruct' : getModel('groq'), max_tokens: MAX_TOKENS, temperature: 0.7,
-      messages: oaMsgs(msgs, system)
-    })
-  });
-  const data = await readJson(res);
-  const text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-  if (text) return {ok:true, text:text.trim()};
-  return {ok:false, status:res.status, err:(data.error && data.error.message) || 'empty response'};
+let tokOverride = 0;
+const maxTok = () => tokOverride || MAX_TOKENS;
+async function sseRead(res, onEvt){
+  const rd = res.body.getReader(), dec = new TextDecoder(); let buf = '';
+  for (;;){
+    const {done, value} = await rd.read(); if (done) break;
+    buf += dec.decode(value, {stream:true}); let i;
+    while ((i = buf.indexOf('\n')) >= 0){
+      const line = buf.slice(0, i).trim(); buf = buf.slice(i+1);
+      if (line.startsWith('data:')){ const d = line.slice(5).trim(); if (d && d !== '[DONE]'){ try{ onEvt(JSON.parse(d)); }catch(e){} } }
+    }
+  }
 }
-
-async function callOpenAI(key, msgs, system){
-  const res = await fetch('https://api.openai.com/v1/chat/completions',{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-    body: JSON.stringify({
-      model: getModel('openai'), max_completion_tokens: MAX_TOKENS,
-      messages: oaMsgs(msgs, system)
-    })
-  });
-  const data = await readJson(res);
-  const text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-  if (text) return {ok:true, text:text.trim()};
-  return {ok:false, status:res.status, err:(data.error && data.error.message) || 'empty response'};
+const okText = (full, res) => full.trim() ? {ok:true, text:full.trim()} : {ok:false, status:res.status, err:'empty response'};
+async function oaCall(url, key, body, onDelta){
+  if (onDelta) body.stream = true;
+  const res = await fetch(url, {method:'POST', headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  if (!onDelta || !res.ok){
+    const data = await readJson(res);
+    const text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if (text) return {ok:true, text:text.trim()};
+    return {ok:false, status:res.status, err:(data.error && data.error.message) || 'empty response'};
+  }
+  let full = '';
+  await sseRead(res, e => { const t = e.choices && e.choices[0] && e.choices[0].delta && e.choices[0].delta.content; if (t){ full += t; onDelta(full); } });
+  return okText(full, res);
 }
-
-async function callClaude(key, msgs, system){
-  const res = await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-      'Content-Type':'application/json'
-    },
-    body: JSON.stringify({
-      model: getModel('claude'), max_tokens: MAX_TOKENS, temperature: 0.7,
-      system: system,
-      messages: msgs.map(clMsg)
-    })
-  });
-  const data = await readJson(res);
-  const text = data.content && data.content.map(c => c.text || '').join('').trim();
-  if (text) return {ok:true, text};
-  return {ok:false, status:res.status, err:(data.error && data.error.message) || 'empty response'};
+function callGroq(key, msgs, system, onDelta){
+  return oaCall('https://api.groq.com/openai/v1/chat/completions', key, {
+    model: msgs.some(m => m.image) ? 'meta-llama/llama-4-scout-17b-16e-instruct' : getModel('groq'),
+    max_tokens: maxTok(), temperature: 0.7, messages: oaMsgs(msgs, system)}, onDelta);
 }
-
-async function callGemini(key, msgs, system, noThinkingCfg){
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(getModel('gemini'))+':generateContent';
-  const gen = {maxOutputTokens: MAX_TOKENS + 300, temperature: 0.7};
-  if (!noThinkingCfg) gen.thinkingConfig = {thinkingBudget: 0};
-  const res = await fetch(url,{
-    method:'POST',
-    headers:{'x-goog-api-key':key,'Content-Type':'application/json'},
-    body: JSON.stringify({
-      systemInstruction:{parts:[{text:system}]},
-      contents: msgs.map(gmMsg),
-      generationConfig: gen, ...(msgs.some(m => m.web) ? {tools:[{google_search:{}}]} : {})
-    })
-  });
-  const data = await readJson(res);
-  const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
-  const text = parts && parts.map(p => p.text || '').join('').trim();
-  if (text) return {ok:true, text};
-  if (!noThinkingCfg && res.status === 400) return callGemini(key, msgs, system, true);
-  return {ok:false, status:res.status, err:(data.error && data.error.message) || 'empty response'};
+function callOpenAI(key, msgs, system, onDelta){
+  return oaCall('https://api.openai.com/v1/chat/completions', key, {
+    model: getModel('openai'), max_completion_tokens: maxTok(), messages: oaMsgs(msgs, system)}, onDelta);
+}
+async function callClaude(key, msgs, system, onDelta){
+  const body = {model:getModel('claude'), max_tokens:maxTok(), system:system, messages:msgs.map(clMsg)};
+  if (onDelta) body.stream = true;
+  const res = await fetch('https://api.anthropic.com/v1/messages', {method:'POST',
+    headers:{'x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','Content-Type':'application/json'},
+    body: JSON.stringify(body)});
+  if (!onDelta || !res.ok){
+    const data = await readJson(res);
+    const text = data.content && data.content.map(c => c.text || '').join('').trim();
+    if (text) return {ok:true, text};
+    return {ok:false, status:res.status, err:(data.error && data.error.message) || 'empty response'};
+  }
+  let full = '';
+  await sseRead(res, e => { if (e.type === 'content_block_delta' && e.delta && e.delta.text){ full += e.delta.text; onDelta(full); } });
+  return okText(full, res);
+}
+async function callGemini(key, msgs, system, onDelta, noThink){
+  const gen = {maxOutputTokens: maxTok() + 300, temperature: 0.7};
+  if (!noThink) gen.thinkingConfig = {thinkingBudget: 0};
+  const body = {systemInstruction:{parts:[{text:system}]}, contents: msgs.map(gmMsg), generationConfig: gen,
+    ...(msgs.some(m => m.web) ? {tools:[{google_search:{}}]} : {})};
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(getModel('gemini')) + (onDelta ? ':streamGenerateContent?alt=sse' : ':generateContent');
+  const res = await fetch(url, {method:'POST', headers:{'x-goog-api-key':key,'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  const pick = d => { const ps = d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts; return ps ? ps.map(p => p.text || '').join('') : ''; };
+  if (!res.ok){
+    const d = await readJson(res);
+    if (!noThink && res.status === 400) return callGemini(key, msgs, system, onDelta, true);
+    return {ok:false, status:res.status, err:(d.error && d.error.message) || 'error'};
+  }
+  if (!onDelta){ const t = pick(await readJson(res)).trim(); return t ? {ok:true, text:t} : {ok:false, status:res.status, err:'empty response'}; }
+  let full = '';
+  await sseRead(res, e => { const t = pick(e); if (t){ full += t; onDelta(full); } });
+  return okText(full, res);
 }
 
 const PROVIDERS = {groq:callGroq, gemini:callGemini, openai:callOpenAI, claude:callClaude};
@@ -697,19 +696,57 @@ function saveHist(){
 }
 function logChat(r, t){ chatLog.push({r, t, ts:Date.now()}); }
 
-async function askBrain(prompt){
+function makeStreamer(){
+  const token = ++speakToken; let sent = 0, pend = 0, closed = false, spoke = false;
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  const fin = () => { if (closed && pend <= 0 && token === speakToken){ speaking = false; refreshState(); afterTurn(); } };
+  function sp(c){
+    c = stripMarkdown(c); if (!c || !('speechSynthesis' in window)) return; spoke = true;
+    const hindi = /[ऀ-ॿ]/.test(c), u = new SpeechSynthesisUtterance(c), v = pickVoice(hindi);
+    if (v){ u.voice = v; u.lang = v.lang; } else u.lang = hindi ? 'hi-IN' : 'en-IN';
+    u.pitch = VOICE_PITCH; u.rate = VOICE_RATE; u.volume = 1;
+    u.onstart = () => { if (token === speakToken && !speaking){ speaking = true; refreshState(); } };
+    u.onend = u.onerror = () => { pend--; fin(); };
+    pend++; speechSynthesis.speak(u);
+  }
+  function feed(full){
+    const mm = full.match(/(^|\n)SAY:/), sm = full.match(/(?:^|\n)SHOW:\s*([\s\S]*?)(?:\n\s*(?:MOOD|SAY):|$)/);
+    if (mm){
+      const rest = full.slice(mm.index + mm[0].length), e = rest.search(/\n\s*(?:SHOW|MOOD):/), ended = e >= 0;
+      const say = (ended ? rest.slice(0, e) : rest).replace(/^\s+/, ''), buf = say.slice(sent);
+      let cut = 0, m; const re = /[.!?।]+\s/g; while ((m = re.exec(buf))) cut = m.index + m[0].length;
+      const take = ended ? buf.length : cut;
+      if (take > 0){ sp(buf.slice(0, take)); sent += take; }
+      if (!sm) $('reply').textContent = say;
+    }
+    if (sm) $('reply').textContent = sm[1];
+  }
+  return {
+    feed,
+    end(pr){ $('reply').textContent = pr.show; closed = true; if (!spoke) sp(pr.say); if (pend <= 0 && token === speakToken){ speaking = false; refreshState(); afterTurn(); } },
+    abort(){ ++speakToken; if ('speechSynthesis' in window) speechSynthesis.cancel(); speaking = false; }
+  };
+}
+
+async function askBrain(prompt, opt){
+  opt = opt || {};
   if (!hasAnyKey())
     return {show:"Boss, API key missing hai. Neeche 'API Keys' button dabakar key daalo.", say:"Boss, API key missing hai. Key set karo."};
 
-  thinking = true; refreshState();
+  thinking = true; refreshState(); tokOverride = opt.max || 0;
   const msg = {role:'user', content:prompt};
   const hadImg = !!pendingImage;
   if (pendingImage){ msg.image = pendingImage; pendingImage = null; clearPrev(); }
-  else if (webOn && NEEDS_WEB.test(prompt)){ msg.web = true; msg.ctx = await webContext(prompt); }
-  chatHistory.push(msg);
-  if (chatHistory.length > HISTORY_LIMIT) chatHistory = chatHistory.slice(-HISTORY_LIMIT);
-  while (chatHistory.length && chatHistory[0].role !== 'user') chatHistory.shift();
-
+  else if (!opt.fresh && webOn && NEEDS_WEB.test(prompt)){ msg.web = true; msg.ctx = await webContext(prompt); }
+  let msgs;
+  if (opt.fresh) msgs = [msg];
+  else {
+    chatHistory.push(msg);
+    if (chatHistory.length > HISTORY_LIMIT) chatHistory = chatHistory.slice(-HISTORY_LIMIT);
+    while (chatHistory.length && chatHistory[0].role !== 'user') chatHistory.shift();
+    msgs = chatHistory;
+  }
+  const system = opt.system || sysPrompt();
   const primary = getPrimary();
   const order = [primary, ...PROVIDER_LIST.filter(p => p !== primary)];
   let lastErr = '';
@@ -717,27 +754,32 @@ async function askBrain(prompt){
     for (const name of order){
       const key = getKey(name);
       if (!key) continue;
+      let sm = null;
       try{
-        const r = await PROVIDERS[name](key, chatHistory, SYSTEM_PROMPT);
+        sm = opt.stream ? makeStreamer() : null;
+        const r = await PROVIDERS[name](key, msgs, system, sm ? sm.feed : null);
         if (r.ok){
           delete msg.image; delete msg.ctx; delete msg.web;
           if (hadImg) msg.content = '[photo] ' + prompt;
-          chatHistory.push({role:'assistant', content:r.text});
+          if (!opt.fresh) chatHistory.push({role:'assistant', content:r.text});
           const pr = parseReply(r.text);
           logChat('u', prompt); logChat('j', pr.show); saveHist();
+          if (sm){ sm.end(pr); pr.streamed = true; }
           return pr;
         }
+        if (sm) sm.abort();
         lastErr = PROVIDER_NAME[name] + ' ' + r.status + ': ' + r.err;
         console.warn('Provider failed', lastErr);
       }catch(e){
+        if (sm) sm.abort();
         lastErr = PROVIDER_NAME[name] + ': network/CORS error - ' + e.message;
         console.warn('Provider error', name, e);
       }
     }
-    chatHistory.pop();
+    if (!opt.fresh) chatHistory.pop();
     return {show:"Boss, AI core fail ho gaya. Key ya internet check karo. (" + lastErr + ")", say:"Boss, AI core fail ho gaya. Key ya internet check karo.", mood:'sad'};
   }finally{
-    thinking = false; refreshState();
+    thinking = false; tokOverride = 0; refreshState();
   }
 }
 
@@ -768,8 +810,17 @@ const SITES = {
 
 async function respond(text){
   const q = text.toLowerCase();
-  if (pendingImage){ const r = await askBrain(text); setMood(r.mood); return say(r.show, afterTurn, r.say); }
+  if (pendingImage) return ask(text, {stream:true});
+  let mt;
+  if ((mt = q.match(/^(?:translator|translate mode|translation mode)\s*(off|band|stop|on|chalu|start)?\s*(?:to|in)?\s*([a-z]+)?/))){
+    const off = /(off|band|stop)/.test(mt[1] || '');
+    xlate = off ? '' : (mt[2] && !/^(on|off)$/.test(mt[2]) ? mt[2][0].toUpperCase() + mt[2].slice(1) : 'English'); updX();
+    return say(off ? 'Translator band, Boss.' : 'Translator on, Boss. Ab jo bologe, main ' + xlate + ' me translate karunga.', afterTurn);
+  }
+  if (xlate) return ask(text, {fresh:true, stream:true, system: translatorPrompt(xlate)});
   if (await localCmd(text, q)) return;
+  if (/(kahani|story|kissa|katha)/.test(q)) return ask(text, {fresh:true, stream:true, max:900, system: sysPrompt().replace('Keep it brief: 1 to 3 short sentences, because it is spoken aloud.', 'Tell a short, engaging story of 8 to 12 short sentences in spoken style, with a clear ending.')});
+  if (/(joke|chutkula|mazak)/.test(q)) return ask(text, {fresh:true, stream:true, system: sysPrompt() + ' Tell exactly one fresh, clean, funny joke. Never repeat an old one.'});
 
   if (/(what('?s)? the time|current time|time kya|abhi.*time|kitne baj|samay kya|\btime batao|\btell me the time)/.test(q)){
     const t = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
@@ -797,9 +848,7 @@ async function respond(text){
     }
   }
 
-  const r = await askBrain(text);
-  setMood(r.mood);
-  say(r.show, afterTurn, r.say);
+  return ask(text, {stream:true});
 }
 
 function afterTurn(){ if (autoMic) setTimeout(listen, 400); else setTimeout(wakeStart, 500); }
@@ -1041,7 +1090,7 @@ async function weather(city){
 }
 
 /* ---- local commands ---- */
-async function localCmd(text, q){
+var localCmd = async function localCmd(text, q){
   const ok = (m, mood) => { if (mood) setMood(mood); say(m, afterTurn); return true; };
   try{
     let m;
@@ -1197,6 +1246,93 @@ window.addEventListener('DOMContentLoaded', () => {
   renderTools(); checkRems();
   if (wakeOn) setTimeout(wakeStart, 800);
 });
+
+/* =====================================================
+   ✨ UPGRADE 2: contacts, briefing, translator, personality, streaming
+   ===================================================== */
+let xlate = '';
+let contacts = (()=>{ try{ return JSON.parse(lsGet('jarvis_contacts')||'[]'); }catch(e){ return []; } })();
+const saveContacts = () => lsSet('jarvis_contacts', JSON.stringify(contacts));
+const QUOTES = ['Aaj ka din shaandaar banega.','Chhote kadam bhi manzil tak le jaate hain.','Aap jo thaan lo, wo kar sakte ho.','Mehnat kabhi bekaar nahi jaati.','Bas shuruaat karo, baaki raasta khud ban jayega.'];
+function sysPrompt(){
+  const X = {funny:'Personality: very funny and playful, crack light clean jokes, but stay helpful.', serious:'Personality: serious, professional and concise, no jokes.', teacher:'Personality: a patient teacher; explain simply with a tiny example and end with one quick question to check understanding.'};
+  const p = X[lsGet('jarvis_persona')]; return p ? SYSTEM_PROMPT.replace('OUTPUT FORMAT', p + '\n' + 'OUTPUT FORMAT') : SYSTEM_PROMPT;
+}
+function translatorPrompt(lang){
+  return 'You are a live translator. Translate the user message into ' + lang + '. Output only the translation, exactly in this format:\nSAY: <translation; Hindi in Devanagari script>\nSHOW: <same translation>\nMOOD: neutral';
+}
+async function ask(text, opt){
+  const r = await askBrain(text, opt);
+  setMood(r.mood);
+  if (r.streamed) $('reply').textContent = r.show; else say(r.show, afterTurn, r.say);
+}
+function updX(){ const b = $('xlBtn'); if (!b) return; b.textContent = '🔁 Translate: ' + (xlate || 'OFF'); b.classList.toggle('on', !!xlate); }
+const escRe = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function normNum(t){ let n = t.replace(/\D/g,'').replace(/^0+/,''); if (n.length === 10) n = '91' + n; return n; }
+function findContact(q){
+  const words = q.split(/[^a-z0-9\u0900-\u097f]+/); let best = null, bl = 0;
+  for (const c of contacts){
+    const nm = c.name.toLowerCase().trim(), toks = [nm, ...nm.split(/\s+/).filter(t => t.length >= 3)];
+    for (const t of toks){ const hit = t.includes(' ') ? (' ' + q + ' ').includes(' ' + t + ' ') : words.includes(t); if (hit && t.length > bl){ best = c; bl = t.length; } }
+  }
+  return best;
+}
+const _localCmd = localCmd;
+localCmd = async function(text, q){
+  let m;
+  if ((m = q.match(/(funny|serious|teacher|normal|butler)\s*mode/))){
+    lsSet('jarvis_persona', /normal|butler/.test(m[1]) ? '' : m[1]);
+    const msg = {funny:'Funny mode on, Boss! Ab hasna padega.', serious:'Serious mode on, Boss. Seedhi aur kaam ki baat.', teacher:'Teacher mode on, Boss. Chaliye seekhte hain.', normal:'Normal butler mode, Boss.', butler:'Normal butler mode, Boss.'}[m[1]];
+    setMood(m[1] === 'serious' ? '' : 'happy'); say(msg, afterTurn); return true;
+  }
+  if (/(good (morning|afternoon|evening)|suprabhat|daily briefing|morning briefing)/.test(q)){
+    thinking = true; refreshState(); let w = '';
+    try{ w = await weather(''); }catch(e){} finally{ thinking = false; refreshState(); }
+    const now = new Date(), h = now.getHours(), g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    const open = todos.filter(t => !t.done), today = rems.filter(r => new Date(r.due).toDateString() === now.toDateString()).sort((a,b) => a.due-b.due);
+    let t = g + ' Boss! Abhi ' + fmtT(now) + ' ho rahe hain, ' + now.toLocaleDateString('en-IN', {weekday:'long', day:'numeric', month:'long'}) + '. ';
+    if (w) t += w.replace(/^Boss, /, '') + ' ';
+    t += open.length ? 'Aapke ' + open.length + ' pending task hain: ' + open.slice(0,3).map(x => x.text).join(', ') + '. ' : 'Koi pending task nahi hai. ';
+    if (today.length) t += 'Aaj ' + today.length + ' reminder hain, pehla ' + fmtT(today[0].due) + ' par ' + today[0].label + '. ';
+    t += QUOTES[Math.floor(Math.random() * QUOTES.length)];
+    setMood('happy'); say(t, afterTurn); return true;
+  }
+  if (/(call|phone|dial|whatsapp|message|msg|text|bhejo|baat)/.test(q)){
+    const c = findContact(q);
+    if (c){
+      if (/(whatsapp|message|msg|text|bhejo)/.test(q)){
+        const first = escRe(c.name.toLowerCase().split(/\s+/)[0]);
+        const body = text.replace(new RegExp(first, 'i'), ' ').replace(/\b(ko|ka|ke|whatsapp|message|msg|text|bhejo|bhej do|bhej|send|karo|kar do|par|pe|me|mein|ye|ki)\b/gi, ' ').replace(/\s+/g, ' ').trim();
+        window.open('https://wa.me/' + normNum(c.tel) + (body ? '?text=' + encodeURIComponent(body) : ''), '_blank');
+        say(c.name + ' ko WhatsApp khol raha hoon, Boss.', afterTurn); return true;
+      }
+      say(c.name + ' ko call laga raha hoon, Boss.', afterTurn); location.href = 'tel:' + c.tel.replace(/[^\d+]/g, ''); return true;
+    }
+  }
+  return _localCmd(text, q);
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+  $('xlBtn').onclick = () => { xlate = xlate === '' ? 'English' : xlate === 'English' ? 'Hindi' : ''; updX(); toast(xlate ? 'Translator: ' + xlate : 'Translator OFF'); };
+  $('personaSel').onchange = e => lsSet('jarvis_persona', e.target.value);
+  $('prefsBtn').addEventListener('click', () => { $('personaSel').value = lsGet('jarvis_persona'); });
+  $('cAdd').onclick = () => { const n = $('cName').value.trim(), t = $('cTel').value.trim(); if (n && t){ contacts.push({name:n, tel:t}); saveContacts(); $('cName').value = $('cTel').value = ''; renderContacts(); } };
+  $('impBtn').onclick = async () => {
+    if (!('contacts' in navigator && 'ContactsManager' in window)){ toast('Is browser me contacts import nahi hai. Manual add karo.'); return; }
+    try{
+      const r = await navigator.contacts.select(['name','tel'], {multiple:true}); let n = 0;
+      r.forEach(c => { const name = ((c.name && c.name[0]) || '').trim(), tel = ((c.tel && c.tel[0]) || '').trim();
+        if (name && tel && !contacts.some(x => x.name.toLowerCase() === name.toLowerCase())){ contacts.push({name, tel}); n++; } });
+      saveContacts(); renderContacts(); toast(n + ' contact add hue');
+    }catch(e){ toast('Import cancel ho gaya'); }
+  };
+  renderContacts();
+});
+function renderContacts(){
+  const l = $('contList'); if (!l) return; l.innerHTML = '';
+  if (!contacts.length) l.appendChild(el('div', 'Koi contact nahi. Add karo ya phone se import karo.', 'hint'));
+  contacts.forEach((c, i) => { const d = el('div', null, 'item'); d.append(el('span', c.name + ' - ' + c.tel), xbtn(() => { contacts.splice(i,1); saveContacts(); renderContacts(); })); l.appendChild(d); });
+}
 
 /* ---------------- UI wiring ---------------- */
 window.addEventListener('DOMContentLoaded', () => {
